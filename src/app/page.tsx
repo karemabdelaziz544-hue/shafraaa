@@ -7,14 +7,12 @@ import {
   DollarSign,
   Receipt,
   Vault,
-  Plus,
   Package,
   AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
   ShoppingCart,
   Boxes,
-  Lock,
   ChevronLeft,
   Users,
   Truck,
@@ -26,7 +24,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DashboardSkeleton } from '@/components/ui/skeleton';
 import { AnimatedNumber } from '@/components/motion/animated-number';
-import { formatCurrency, formatArabicDate, formatPercent } from '@/lib/formatters';
+import { formatCurrency, formatPercent } from '@/lib/formatters';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function HomePage() {
   const {
@@ -58,17 +57,14 @@ export default function HomePage() {
   const currentDrawerCash = activeDrawer ? activeDrawer.expectedCash : 0;
 
   // 1. التنبيهات الذكية
-  // أ. منتجات وصلت أو نزلت عن حد الطلب
   const lowStockProducts = products.filter((p) => p.currentStock <= p.minStockAlert);
-  // ب. عملاء تجاوزوا حد الائتمان
   const overCreditCustomers = customers.filter(
     (c) => c.creditLimit > 0 && c.currentBalance > c.creditLimit
   );
-  // ج. موردين مستحق لهم مبالغ
   const owedSuppliers = suppliers.filter((s) => s.owedBalance > 0);
   const totalSuppliersOwed = owedSuppliers.reduce((sum, s) => sum + s.owedBalance, 0);
 
-  // آخر العمليات (فواتير، مصروفات)
+  // آخر العمليات
   const recentActivities = [
     ...salesInvoices.slice(0, 5).map((inv) => ({
       id: inv.id,
@@ -86,37 +82,43 @@ export default function HomePage() {
       type: 'expense',
       time: exp.createdAt,
     })),
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6);
+  ]
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    .slice(0, 6);
 
   return (
     <div className="space-y-6">
       {/* بطاقة الترحيب العريضة الخاصة بالمالك كريم */}
-      <div className="bg-gradient-to-l from-brand-900 via-brand-800 to-brand-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-brand-950/20 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-gradient-to-l from-abyssal via-fantastic to-fantastic rounded-3xl p-6 sm:p-8 text-palladian shadow-elevated border border-oatmeal/20 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-flame/15 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-brand-100">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-abyssal/45 border border-flame/30 text-xs font-semibold text-palladian">
+              <Sparkles strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 text-flame" />
               <span>لوحة التحكم الكاملة</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-palladian">
               أهلًا يا {ownerName}، يوم موفق في تجارتك!
             </h1>
-            <p className="text-sm sm:text-base text-brand-100/90 max-w-xl">
+            <p className="text-sm sm:text-base text-oatmeal max-w-xl">
               كل عمليات محلك تحت سيطرتك المباشرة: مبيعات، تكلفة حقيقية، مخزون دقيق، وتقفيل الدرج بالجنيه المصري.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/sales/new">
-              <Button size="xl" className="bg-white text-brand-900 hover:bg-slate-100 shadow-lg font-bold">
-                <ShoppingCart className="w-5 h-5 text-brand-600" />
+              <Button size="xl" variant="primary" className="shadow-accent font-bold">
+                <ShoppingCart strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
                 <span>فاتورة بيع سريعة</span>
               </Button>
             </Link>
             <Link href="/drawer">
-              <Button size="xl" variant="outline" className="border-white/30 text-white hover:bg-white/10 font-semibold">
-                <Vault className="w-5 h-5" />
+              <Button
+                size="xl"
+                variant="outline"
+                className="border-oatmeal/40 bg-abyssal/40 text-palladian hover:bg-abyssal/75 hover:border-flame font-semibold"
+              >
+                <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
                 <span>{activeDrawer ? 'إدارة الدرج' : 'فتح الوردية'}</span>
               </Button>
             </Link>
@@ -127,38 +129,38 @@ export default function HomePage() {
       {/* المؤشرات المالية الرئيسية الأربعة (KPIs) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         {/* 1. مبيعات اليوم */}
-        <Card className="hover:border-brand-300 transition-all">
+        <Card className="hover:border-flame transition-colors">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500">مبيعات اليوم</span>
-              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5" />
+              <span className="text-xs font-bold text-ink-muted">مبيعات اليوم</span>
+              <div className="w-9 h-9 rounded-xl bg-flame/25 text-abyssal dark:text-flame flex items-center justify-center">
+                <TrendingUp strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-black text-slate-900">
+            <div className="text-lg sm:text-2xl font-black text-ink-strong">
               <AnimatedNumber value={todaySalesTotal} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              عدد الفواتير: <span className="font-bold text-slate-800">{todaySalesInvoices.length}</span>
+            <p className="text-xs text-ink-muted mt-1">
+              عدد الفواتير: <span className="font-bold text-ink-strong">{todaySalesInvoices.length}</span>
             </p>
           </CardContent>
         </Card>
 
         {/* 2. مجمل الربح */}
-        <Card className="hover:border-emerald-300 transition-all">
+        <Card className="hover:border-success-border transition-colors">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500">مجمل ربح اليوم</span>
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <DollarSign className="w-5 h-5" />
+              <span className="text-xs font-bold text-ink-muted">مجمل ربح اليوم</span>
+              <div className="w-9 h-9 rounded-xl bg-success-bg text-success flex items-center justify-center">
+                <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-black text-emerald-600">
+            <div className="text-lg sm:text-2xl font-black text-success">
               <AnimatedNumber value={todayGrossProfit} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-ink-muted mt-1">
               الهامش:{' '}
-              <span className="font-bold text-emerald-700">
+              <span className="font-bold text-success">
                 {todaySalesTotal > 0 ? formatPercent((todayGrossProfit / todaySalesTotal) * 100) : '0%'}
               </span>
             </p>
@@ -166,66 +168,65 @@ export default function HomePage() {
         </Card>
 
         {/* 3. مصروفات اليوم */}
-        <Card className="hover:border-rose-300 transition-all">
+        <Card className="hover:border-danger-border transition-colors">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500">مصروفات اليوم</span>
-              <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                <Receipt className="w-5 h-5" />
+              <span className="text-xs font-bold text-ink-muted">مصروفات اليوم</span>
+              <div className="w-9 h-9 rounded-xl bg-danger-bg text-danger-text flex items-center justify-center">
+                <Receipt strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-black text-rose-600">
+            <div className="text-lg sm:text-2xl font-black text-danger-text">
               <AnimatedNumber value={todayExpensesTotal} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              عدد البنود: <span className="font-bold text-slate-700">{todayExpenses.length} مصروفات</span>
+            <p className="text-xs text-ink-muted mt-1">
+              عدد البنود: <span className="font-bold text-ink-strong">{todayExpenses.length} مصروفات</span>
             </p>
           </CardContent>
         </Card>
 
         {/* 4. نقدية الدرج الحالي */}
-        <Card className="hover:border-amber-300 transition-all">
+        <Card className="hover:border-warning-border transition-colors">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500">نقدية الدرج (كاش)</span>
-              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Vault className="w-5 h-5" />
+              <span className="text-xs font-bold text-ink-muted">نقدية الدرج (كاش)</span>
+              <div className="w-9 h-9 rounded-xl bg-warning-bg text-warning flex items-center justify-center">
+                <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-black text-slate-900">
+            <div className="text-lg sm:text-2xl font-black text-ink-strong">
               <AnimatedNumber value={currentDrawerCash} />
             </div>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+            <p className="text-xs text-ink-muted mt-1 flex items-center gap-1">
               الحالة:{' '}
               {activeDrawer ? (
-                <span className="text-emerald-600 font-bold">مفتوح ومسجل</span>
+                <span className="text-success font-bold">مفتوح ومسجل</span>
               ) : (
-                <span className="text-amber-600 font-bold">مقفل</span>
+                <span className="text-warning font-bold">مقفل</span>
               )}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* شريط التنبيهات الذكية (النواقص، ديون العملاء، مستحقات الموردين) */}
+      {/* شريط التنبيهات الذكية */}
       {(lowStockProducts.length > 0 || overCreditCustomers.length > 0 || owedSuppliers.length > 0) && (
         <div className="space-y-2.5">
-          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <h3 className="text-sm font-bold text-ink-strong flex items-center gap-2">
+            <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-truffle dark:text-flame" />
             <span>تنبيهات المحل العاجلة</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* تنبيه نواقص المخزون */}
             {lowStockProducts.length > 0 ? (
               <Link href="/products?filter=low-stock">
-                <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 hover:bg-amber-100/80 transition-all flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
-                    <Boxes className="w-4 h-4" />
+                <div className="p-3.5 rounded-2xl bg-warning-bg border border-warning-border hover:border-flame transition-colors flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-flame text-abyssal flex items-center justify-center shrink-0">
+                    <Boxes strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-amber-900">نواقص المخزون</p>
-                    <p className="text-xs text-amber-700 truncate mt-0.5">
+                    <p className="text-xs font-bold text-ink-strong">نواقص المخزون</p>
+                    <p className="text-xs text-warning truncate mt-0.5">
                       {lowStockProducts.length} أصناف وصلت أو نزلت عن حد الطلب!
                     </p>
                   </div>
@@ -233,16 +234,15 @@ export default function HomePage() {
               </Link>
             ) : null}
 
-            {/* تنبيه تجاوز حد الائتمان */}
             {overCreditCustomers.length > 0 ? (
               <Link href="/customers">
-                <div className="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200 hover:bg-rose-100/80 transition-all flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4" />
+                <div className="p-3.5 rounded-2xl bg-danger-bg border border-danger-border hover:border-truffle transition-colors flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-truffle text-truffle-ink flex items-center justify-center shrink-0">
+                    <Users strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-rose-900">تجاوز حد الائتمان</p>
-                    <p className="text-xs text-rose-700 truncate mt-0.5">
+                    <p className="text-xs font-bold text-ink-strong">تجاوز حد الائتمان</p>
+                    <p className="text-xs text-danger-text truncate mt-0.5">
                       {overCreditCustomers.length} عميل تجاوزوا سقف الدين المسموح!
                     </p>
                   </div>
@@ -250,16 +250,15 @@ export default function HomePage() {
               </Link>
             ) : null}
 
-            {/* تنبيه مستحقات الموردين */}
             {owedSuppliers.length > 0 ? (
               <Link href="/suppliers">
-                <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 hover:bg-blue-100/80 transition-all flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-                    <Truck className="w-4 h-4" />
+                <div className="p-3.5 rounded-2xl bg-info-bg border border-info-border hover:border-fantastic transition-colors flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-fantastic text-palladian flex items-center justify-center shrink-0">
+                    <Truck strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-blue-900">مستحقات الموردين</p>
-                    <p className="text-xs text-blue-700 truncate mt-0.5">
+                    <p className="text-xs font-bold text-ink-strong">مستحقات الموردين</p>
+                    <p className="text-xs text-ink truncate mt-0.5">
                       إجمالي {formatCurrency(totalSuppliersOwed)} لـ {owedSuppliers.length} موردين
                     </p>
                   </div>
@@ -271,24 +270,27 @@ export default function HomePage() {
       )}
 
       {/* بطاقة تفصيلية دائمة لنواقص المخزون */}
-      <Card className={lowStockProducts.length > 0 ? 'border-amber-300 bg-amber-50/30' : 'border-emerald-200 bg-emerald-50/20'}>
+      <Card className={lowStockProducts.length > 0 ? 'border-warning-border bg-warning-bg/40' : 'border-success-border bg-success-bg/40'}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between w-full">
             <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-              <Boxes className={`w-5 h-5 ${lowStockProducts.length > 0 ? 'text-amber-600' : 'text-emerald-600'}`} />
+              <Boxes
+                strokeWidth={ICON_TOKENS.strokeWidth}
+                className={`w-5 h-5 ${lowStockProducts.length > 0 ? 'text-warning' : 'text-success'}`}
+              />
               <span>بطاقة تنبيه نواقص المخزون</span>
               <Badge variant={lowStockProducts.length > 0 ? 'warning' : 'success'}>
                 {lowStockProducts.length > 0 ? `${lowStockProducts.length} صنف ناقص` : 'المخزون آمن'}
               </Badge>
             </CardTitle>
-            <Link href="/products?filter=low-stock" className="text-xs text-brand-600 font-bold hover:underline">
+            <Link href="/products?filter=low-stock" className="text-xs text-truffle dark:text-flame font-bold hover:underline">
               عرض الكل
             </Link>
           </div>
         </CardHeader>
         <CardContent className="p-4 pt-2">
           {lowStockProducts.length === 0 ? (
-            <p className="text-xs text-emerald-700 font-medium">
+            <p className="text-xs text-success font-medium">
               جميع الأصناف المتوفرة تتجاوز حد التنبيه الأدنى حالياً.
             </p>
           ) : (
@@ -297,11 +299,11 @@ export default function HomePage() {
                 <Link
                   key={prod.id}
                   href="/products?filter=low-stock"
-                  className="p-3 rounded-xl bg-white border border-amber-200 hover:border-amber-400 transition-all flex items-center justify-between gap-2"
+                  className="p-3 rounded-xl bg-surface border border-warning-border hover:border-flame transition-colors flex items-center justify-between gap-2"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">{prod.name}</p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs font-bold text-ink-strong truncate">{prod.name}</p>
+                    <p className="text-[11px] text-ink-muted">
                       حد التنبيه: {prod.minStockAlert} {prod.unit}
                     </p>
                   </div>
@@ -317,15 +319,15 @@ export default function HomePage() {
 
       {/* شبكة الإجراءات السريعة عريضة اللمس */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-slate-800">إجراءات سريعة</h3>
+        <h3 className="text-sm font-bold text-ink-strong">إجراءات سريعة</h3>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <Link href="/sales/new">
             <Button
               variant="outline"
               size="lg"
-              className="w-full h-20 flex-col gap-2 bg-white hover:border-brand-500 hover:text-brand-600 text-slate-800 rounded-2xl"
+              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
             >
-              <ShoppingCart className="w-6 h-6 text-brand-600" />
+              <ShoppingCart strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
               <span className="text-xs font-bold">فاتورة بيع</span>
             </Button>
           </Link>
@@ -334,9 +336,9 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="lg"
-              className="w-full h-20 flex-col gap-2 bg-white hover:border-brand-500 hover:text-brand-600 text-slate-800 rounded-2xl"
+              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
             >
-              <Package className="w-6 h-6 text-blue-600" />
+              <Package strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-ink-strong" />
               <span className="text-xs font-bold">إضافة صنف</span>
             </Button>
           </Link>
@@ -345,9 +347,9 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="lg"
-              className="w-full h-20 flex-col gap-2 bg-white hover:border-brand-500 hover:text-brand-600 text-slate-800 rounded-2xl"
+              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
             >
-              <Receipt className="w-6 h-6 text-rose-600" />
+              <Receipt strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-danger-text" />
               <span className="text-xs font-bold">صرف مصروف</span>
             </Button>
           </Link>
@@ -356,20 +358,20 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="lg"
-              className="w-full h-20 flex-col gap-2 bg-white hover:border-brand-500 hover:text-brand-600 text-slate-800 rounded-2xl"
+              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
             >
-              <Boxes className="w-6 h-6 text-emerald-600" />
+              <Boxes strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-success" />
               <span className="text-xs font-bold">جرد المخزن</span>
             </Button>
           </Link>
 
-          <Link href="/drawer">
+          <Link href="/drawer" className="col-span-2 sm:col-span-1">
             <Button
               variant="outline"
               size="lg"
-              className="w-full h-20 flex-col gap-2 bg-white hover:border-brand-500 hover:text-brand-600 text-slate-800 rounded-2xl col-span-2 sm:col-span-1"
+              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
             >
-              <Vault className="w-6 h-6 text-amber-600" />
+              <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-warning" />
               <span className="text-xs font-bold">تقفيل الدرج</span>
             </Button>
           </Link>
@@ -381,50 +383,50 @@ export default function HomePage() {
         <CardHeader>
           <CardTitle>آخر العمليات الفورية</CardTitle>
           <Link href="/sales">
-            <Button variant="ghost" size="sm" className="text-xs text-brand-600">
+            <Button variant="ghost" size="sm" className="text-xs text-truffle dark:text-flame font-bold">
               <span>عرض كل الفواتير</span>
-              <ChevronLeft className="w-4 h-4 mr-1" />
+              <ChevronLeft strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 mr-1" />
             </Button>
           </Link>
         </CardHeader>
         <CardContent className="p-0">
           {recentActivities.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
+            <div className="p-8 text-center text-ink-muted text-sm">
               لا توجد عمليات مسجلة اليوم حتى الآن. ابدأ بإنشاء فاتورة بيع جديدة!
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-divider">
               {recentActivities.map((act) => (
-                <div key={act.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div key={act.id} className="p-4 flex items-center justify-between hover:bg-surface-alt/60 transition-colors">
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
                         act.type === 'sale'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : 'bg-rose-50 text-rose-600'
+                          ? 'bg-success-bg text-success'
+                          : 'bg-danger-bg text-danger-text'
                       }`}
                     >
                       {act.type === 'sale' ? (
-                        <ArrowDownRight className="w-5 h-5" />
+                        <ArrowDownRight strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
                       ) : (
-                        <ArrowUpRight className="w-5 h-5" />
+                        <ArrowUpRight strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-900">{act.title}</p>
-                      <p className="text-xs text-slate-500">{act.subtitle}</p>
+                      <p className="text-sm font-bold text-ink-strong">{act.title}</p>
+                      <p className="text-xs text-ink-muted">{act.subtitle}</p>
                     </div>
                   </div>
                   <div className="text-left">
                     <p
                       className={`text-sm font-black ${
-                        act.type === 'sale' ? 'text-emerald-600' : 'text-rose-600'
+                        act.type === 'sale' ? 'text-success' : 'text-danger-text'
                       }`}
                     >
                       {act.type === 'sale' ? '+' : '-'}
                       {formatCurrency(act.amount)}
                     </p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-ink-muted">
                       {new Date(act.time).toLocaleTimeString('ar-EG', {
                         hour: '2-digit',
                         minute: '2-digit',

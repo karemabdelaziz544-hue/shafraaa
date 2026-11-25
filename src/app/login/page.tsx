@@ -6,6 +6,7 @@ import { LogIn, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,7 +25,6 @@ export default function LoginPage() {
 
     const supabase = createClient();
     if (!supabase) {
-      // في بيئة التطوير المحلية بدون إعداد مفاتيح Supabase
       setTimeout(() => {
         setIsLoading(false);
         router.push('/');
@@ -76,27 +76,27 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4 w-full">
-      <Card className="max-w-md w-full shadow-2xl border-slate-200">
-        <CardHeader className="text-center pb-2">
-          <div className="w-14 h-14 rounded-2xl bg-brand-600 text-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
-            <ShieldCheck className="w-8 h-8" />
+      <Card className="max-w-md w-full shadow-elevated border-line">
+        <CardHeader className="text-center pb-3 flex-col items-center bg-fantastic text-palladian border-b border-abyssal">
+          <div className="w-14 h-14 rounded-2xl bg-flame text-abyssal flex items-center justify-center mx-auto mb-3 shadow-accent">
+            <ShieldCheck strokeWidth={ICON_TOKENS.strokeWidth} className="w-8 h-8" />
           </div>
-          <CardTitle className="text-xl font-black text-slate-900">
+          <CardTitle className="text-xl font-black text-palladian">
             {isSignUp ? 'تسجيل حساب مستخدم / موظف جديد' : 'تسجيل دخول نظام شفرة'}
           </CardTitle>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-oatmeal mt-1">
             لوحة إدارة المحل للتجزئة - مصر (EGP)
           </p>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-5 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {message && (
               <div
-                className={`p-3 rounded-xl text-xs font-medium border ${
+                className={`p-3 rounded-xl text-xs font-semibold border ${
                   message.type === 'error'
-                    ? 'bg-rose-50 border-rose-200 text-rose-900'
-                    : 'bg-blue-50 border-blue-200 text-blue-900'
+                    ? 'bg-danger-bg border-danger-border text-danger-text'
+                    : 'bg-info-bg border-info-border text-ink-strong'
                 }`}
               >
                 {message.text}
@@ -105,22 +105,22 @@ export default function LoginPage() {
 
             {isSignUp && (
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">الاسم بالكامل</label>
+                <label className="text-xs font-bold text-ink block mb-1">الاسم بالكامل</label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="الاسم الثلاثي"
-                  className="w-full h-11 px-3.5 text-sm border rounded-xl"
+                  className="w-full h-11 px-3.5 text-sm border border-line bg-surface text-ink-strong placeholder:text-ink-muted rounded-xl focus:outline-none focus:border-flame focus:ring-2 focus:ring-flame/25"
                 />
               </div>
             )}
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">البريد الإلكتروني</label>
+              <label className="text-xs font-bold text-ink block mb-1">البريد الإلكتروني</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
+                <Mail strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-ink-muted absolute right-3.5 top-3.5" />
                 <input
                   type="email"
                   required
@@ -128,16 +128,16 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   autoComplete="email"
-                  className="w-full h-11 pr-10 pl-3 text-sm border rounded-xl text-left"
+                  className="w-full h-11 pr-10 pl-3 text-sm border border-line bg-surface text-ink-strong placeholder:text-ink-muted rounded-xl text-left focus:outline-none focus:border-flame focus:ring-2 focus:ring-flame/25"
                   dir="ltr"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">كلمة المرور</label>
+              <label className="text-xs font-bold text-ink block mb-1">كلمة المرور</label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
+                <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-ink-muted absolute right-3.5 top-3.5" />
                 <input
                   type="password"
                   required
@@ -145,7 +145,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                  className="w-full h-11 pr-10 pl-3 text-sm border rounded-xl text-left"
+                  className="w-full h-11 pr-10 pl-3 text-sm border border-line bg-surface text-ink-strong placeholder:text-ink-muted rounded-xl text-left focus:outline-none focus:border-flame focus:ring-2 focus:ring-flame/25"
                   dir="ltr"
                 />
               </div>
@@ -153,11 +153,11 @@ export default function LoginPage() {
 
             {isSignUp && (
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">نوع الدور والصلاحية</label>
+                <label className="text-xs font-bold text-ink block mb-1">نوع الدور والصلاحية</label>
                 <select
                   value={role}
                   onChange={(e: any) => setRole(e.target.value)}
-                  className="w-full h-11 px-3 text-sm border rounded-xl"
+                  className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
                 >
                   <option value="owner">المالك - صلاحيات كاملة</option>
                   <option value="cashier">كاشير - بيع وسداد فقط</option>
@@ -170,9 +170,9 @@ export default function LoginPage() {
               size="xl"
               variant="primary"
               isLoading={isLoading}
-              className="w-full font-bold shadow-md shadow-brand-500/20"
+              className="w-full font-bold shadow-accent"
             >
-              <LogIn className="w-5 h-5 ml-2" />
+              <LogIn strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 ml-2" />
               <span>{isSignUp ? 'إنشاء الحساب' : 'دخول لوحة التحكم'}</span>
             </Button>
 
@@ -183,7 +183,7 @@ export default function LoginPage() {
                   setIsSignUp(!isSignUp);
                   setMessage(null);
                 }}
-                className="text-xs text-brand-600 hover:underline font-bold"
+                className="text-xs text-truffle dark:text-flame hover:underline font-bold"
               >
                 {isSignUp ? 'لديك حساب بالفعل؟ سجل دخولك' : 'إنشاء حساب محل أو مستخدم جديد'}
               </button>

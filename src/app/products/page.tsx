@@ -11,24 +11,19 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
-  History,
-  TrendingUp,
-  Tag,
   Printer,
   Sparkles,
-  CheckSquare,
-  Square,
 } from 'lucide-react';
 import { useShop, Product } from '@/lib/store/shop-store';
 import { Button, SaveButtonState } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
-import { TableSkeletonRows } from '@/components/ui/skeleton';
+import { TablePageSkeleton, TableSkeletonRows } from '@/components/ui/skeleton';
 import { calculateProfitMargin } from '@/lib/calculations';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
 import { generateUniqueBarcode } from '@/lib/barcode-generator';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 const BarcodeScannerModal = dynamic(
   () => import('@/components/barcode-scanner-modal').then((mod) => mod.BarcodeScannerModal),
@@ -52,18 +47,15 @@ function ProductsContent() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isLowStockFilter, setIsLowStockFilter] = useState(filterParam === 'low-stock');
 
-  // تحديد المنتجات لطباعة ملصقات الباركود
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [isLabelPrinterOpen, setIsLabelPrinterOpen] = useState(false);
   const [productsToPrint, setProductsToPrint] = useState<Product[]>([]);
 
-  // نوافذ
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerTarget, setScannerTarget] = useState<'form' | 'search'>('form');
 
-  // حقول نموذج الإضافة / التعديل
   const [formData, setFormData] = useState({
     name: '',
     barcode: '',
@@ -78,7 +70,6 @@ function ProductsContent() {
 
   const categories = Array.from(new Set(products.map((p) => p.category || 'عام')));
 
-  // تصفية المنتجات
   const filteredProducts = products.filter((p) => {
     if (isLowStockFilter && p.currentStock > p.minStockAlert) return false;
     if (selectedCategory !== 'all' && p.category !== selectedCategory) return false;
@@ -91,14 +82,12 @@ function ProductsContent() {
     );
   });
 
-  // حساب الهامش المباشر في النموذج
   const liveMargin = calculateProfitMargin(
     formData.costPrice,
     formData.extraCost,
     formData.salePrice
   );
 
-  // توليد باركود تلقائي فريد
   const handleGenerateNewBarcode = () => {
     const existingCodes = products.map((p) => p.barcode).filter(Boolean);
     const newCode = generateUniqueBarcode(existingCodes);
@@ -191,7 +180,6 @@ function ProductsContent() {
     }
   };
 
-  // إدارة تحديد المنتجات للطباعة
   const toggleSelectProduct = (id: string) => {
     setSelectedProductIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -206,13 +194,11 @@ function ProductsContent() {
     }
   };
 
-  // فتح نافذة طباعة لمنتج واحد
   const handlePrintSingleProduct = (product: Product) => {
     setProductsToPrint([product]);
     setIsLabelPrinterOpen(true);
   };
 
-  // فتح نافذة طباعة للمنتجات المحددة
   const handlePrintBatch = () => {
     const selected = products.filter((p) => selectedProductIds.includes(p.id));
     if (selected.length === 0) return;
@@ -223,27 +209,26 @@ function ProductsContent() {
   return (
     <div className="space-y-5">
       {/* رأس الصفحة */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Package className="w-6 h-6 text-brand-600" />
+          <h1 className="text-xl sm:text-2xl font-black text-ink-strong flex items-center gap-2">
+            <Package strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
             <span>المنتجات والتسعير وهامش الربح والباركود</span>
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-muted">
             أهلًا يا كريم - إدارة دقيقة للأصناف وتوليد الباركود تلقائيًا وطباعة استيكرات الأسعار
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* زر طباعة الملصقات للمنتجات المحددة */}
           {selectedProductIds.length > 0 && (
             <Button
-              variant="outline"
+              variant="secondary"
               size="md"
               onClick={handlePrintBatch}
-              className="gap-1.5 font-bold border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 shadow-sm"
+              className="gap-1.5 font-bold border border-flame/60 bg-flame/20 text-ink-strong hover:bg-flame/35"
             >
-              <Printer className="w-4 h-4" />
+              <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
               <span>طباعة ملصقات ({selectedProductIds.length})</span>
             </Button>
           )}
@@ -256,12 +241,12 @@ function ProductsContent() {
               setIsScannerOpen(true);
             }}
           >
-            <Camera className="w-4 h-4 ml-1" />
+            <Camera strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
             <span>بحث بالكاميرا</span>
           </Button>
 
           <Button variant="primary" size="md" onClick={handleOpenAdd}>
-            <Plus className="w-4 h-4 ml-1" />
+            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
             <span>إضافة صنف جديد</span>
           </Button>
         </div>
@@ -270,20 +255,20 @@ function ProductsContent() {
       {/* شريط الفلاتر والبحث */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="w-5 h-5 text-slate-400 absolute right-3.5 top-3" />
+          <Search strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-ink-muted absolute right-3.5 top-3" />
           <input
             type="text"
             placeholder="ابحث باسم الصنف أو الباركود..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-11 pr-11 pl-4 rounded-xl border border-slate-300 bg-white text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            className="w-full h-11 pr-11 pl-4 rounded-xl border border-line bg-surface text-ink-strong placeholder:text-ink-muted text-sm focus:border-flame focus:outline-none focus:ring-2 focus:ring-flame/25"
           />
         </div>
 
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="h-11 px-3 text-xs sm:text-sm border border-slate-300 rounded-xl bg-white focus:outline-none"
+          className="h-11 px-3 text-xs sm:text-sm border border-line rounded-xl bg-surface text-ink-strong focus:outline-none focus:border-flame"
         >
           <option value="all">جميع الأقسام</option>
           {categories.map((c) => (
@@ -295,13 +280,13 @@ function ProductsContent() {
 
         <button
           onClick={() => setIsLowStockFilter(!isLowStockFilter)}
-          className={`h-11 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
+          className={`h-11 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-colors flex items-center gap-1.5 ${
             isLowStockFilter
-              ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+              ? 'bg-truffle text-truffle-ink border-truffle shadow-sm'
+              : 'bg-surface text-ink border-line hover:bg-surface-alt'
           }`}
         >
-          <AlertTriangle className="w-4 h-4" />
+          <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
           <span>النواقص فقط</span>
         </button>
       </div>
@@ -312,12 +297,12 @@ function ProductsContent() {
           {isInitialLoading ? (
             <TableSkeletonRows columns={7} rows={6} />
           ) : filteredProducts.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm">
+            <div className="p-12 text-center text-ink-muted text-sm">
               لا توجد منتجات مطابقة لخيارات البحث.
             </div>
           ) : (
             <table className="w-full text-right text-xs sm:text-sm">
-              <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <thead className="bg-surface-alt text-ink font-bold border-b border-line">
                 <tr>
                   <th className="p-3 sm:p-4 w-10 text-center">
                     <input
@@ -327,7 +312,7 @@ function ProductsContent() {
                         selectedProductIds.length === filteredProducts.length
                       }
                       onChange={toggleSelectAll}
-                      className="rounded text-brand-600 focus:ring-brand-500 cursor-pointer"
+                      className="rounded accent-truffle focus:ring-flame cursor-pointer"
                       title="تحديد الكل"
                     />
                   </th>
@@ -340,7 +325,7 @@ function ProductsContent() {
                   <th className="p-3 sm:p-4 text-center">إجراءات وطباعة</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-divider">
                 {filteredProducts.map((p) => {
                   const isLow = p.currentStock <= p.minStockAlert;
                   const totalCost = p.costPrice + p.extraCost;
@@ -351,7 +336,7 @@ function ProductsContent() {
                     <tr
                       key={p.id}
                       className={`transition-colors ${
-                        isSelected ? 'bg-purple-50/50' : 'hover:bg-slate-50/80'
+                        isSelected ? 'bg-flame/15' : 'hover:bg-surface-alt/60'
                       }`}
                     >
                       <td className="p-3 sm:p-4 text-center">
@@ -359,34 +344,34 @@ function ProductsContent() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectProduct(p.id)}
-                          className="rounded text-brand-600 focus:ring-brand-500 cursor-pointer"
+                          className="rounded accent-truffle focus:ring-flame cursor-pointer"
                         />
                       </td>
                       <td className="p-3 sm:p-4">
-                        <p className="font-bold text-slate-900">{p.name}</p>
-                        <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                        <p className="font-bold text-ink-strong">{p.name}</p>
+                        <p className="text-[11px] font-mono text-ink-muted mt-0.5">
                           {p.barcode || 'بدون باركود'}
                         </p>
                       </td>
                       <td className="p-3 sm:p-4">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700">
+                        <Badge variant="default" className="text-[11px]">
                           {p.category || 'عام'}
-                        </span>
+                        </Badge>
                       </td>
-                      <td className="p-3 sm:p-4 font-mono font-medium text-slate-700">
+                      <td className="p-3 sm:p-4 font-mono font-medium text-ink">
                         {formatCurrency(totalCost)}
                       </td>
-                      <td className="p-3 sm:p-4 font-mono font-bold text-brand-700">
+                      <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
                         {formatCurrency(p.salePrice)}
                       </td>
                       <td className="p-3 sm:p-4">
                         <span
                           className={`font-bold font-mono ${
                             margin >= 20
-                              ? 'text-emerald-600'
+                              ? 'text-success'
                               : margin > 0
-                              ? 'text-amber-600'
-                              : 'text-rose-600'
+                              ? 'text-warning'
+                              : 'text-danger-text'
                           }`}
                         >
                           {formatPercent(margin)}
@@ -394,7 +379,7 @@ function ProductsContent() {
                       </td>
                       <td className="p-3 sm:p-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-slate-900">
+                          <span className="font-mono font-bold text-ink-strong">
                             {p.currentStock} {p.unit}
                           </span>
                           {isLow && (
@@ -406,15 +391,14 @@ function ProductsContent() {
                       </td>
                       <td className="p-3 sm:p-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* زر طباعة باركود للمنتج */}
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handlePrintSingleProduct(p)}
-                            className="text-xs gap-1 border-purple-200 text-purple-700 hover:bg-purple-50"
+                            className="text-xs gap-1"
                             title="طباعة ملصق باركود لهذا الصنف"
                           >
-                            <Printer className="w-3.5 h-3.5" />
+                            <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
                             <span>استيكر</span>
                           </Button>
 
@@ -424,7 +408,7 @@ function ProductsContent() {
                             onClick={() => handleOpenEdit(p)}
                             title="تعديل"
                           >
-                            <Edit className="w-4 h-4 text-slate-600" />
+                            <Edit strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-ink" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -436,7 +420,7 @@ function ProductsContent() {
                             }}
                             title="حذف"
                           >
-                            <Trash2 className="w-4 h-4 text-rose-500" />
+                            <Trash2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-danger-text" />
                           </Button>
                         </div>
                       </td>
@@ -449,7 +433,7 @@ function ProductsContent() {
         </CardContent>
       </Card>
 
-      {/* نافذة إضافة / تعديل منتج (مع التوليد التلقائي للباركود) */}
+      {/* نافذة إضافة / تعديل منتج */}
       <Dialog
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -459,8 +443,8 @@ function ProductsContent() {
         <form onSubmit={handleSaveProduct} className="p-4 sm:p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <label className="text-xs font-bold text-slate-700 block mb-1">
-                اسم المنتج / الصنف <span className="text-rose-500">*</span>
+              <label className="text-xs font-bold text-ink block mb-1">
+                اسم المنتج / الصنف <span className="text-danger-text">*</span>
               </label>
               <input
                 type="text"
@@ -468,20 +452,20 @@ function ProductsContent() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="مثال: شاحن سامسونج أصلي 25W"
-                className="w-full h-11 px-3 text-sm border rounded-xl"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong placeholder:text-ink-muted rounded-xl focus:outline-none focus:border-flame"
                 autoFocus
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700">الباركود / الكود</label>
+                <label className="text-xs font-bold text-ink">الباركود / الكود</label>
                 <button
                   type="button"
                   onClick={handleGenerateNewBarcode}
-                  className="text-[11px] font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1"
+                  className="text-[11px] font-bold text-truffle dark:text-flame hover:underline flex items-center gap-1"
                 >
-                  <Sparkles className="w-3 h-3" />
+                  <Sparkles strokeWidth={ICON_TOKENS.strokeWidth} className="w-3 h-3" />
                   <span>توليد كود تلقائي</span>
                 </button>
               </div>
@@ -491,7 +475,7 @@ function ProductsContent() {
                   value={formData.barcode}
                   onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                   placeholder="تم توليده تلقائياً أو اكتبه/امسحه"
-                  className="flex-1 h-11 px-3 text-sm border rounded-xl font-mono font-bold"
+                  className="flex-1 h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl font-mono font-bold focus:outline-none focus:border-flame"
                 />
                 <Button
                   type="button"
@@ -503,25 +487,25 @@ function ProductsContent() {
                   className="px-3"
                   title="مسح بالكاميرا"
                 >
-                  <Camera className="w-4 h-4" />
+                  <Camera strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">القسم / التصنيف</label>
+              <label className="text-xs font-bold text-ink block mb-1">القسم / التصنيف</label>
               <input
                 type="text"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="إلكترونيات، كابلات، مفاتيح..."
-                className="w-full h-11 px-3 text-sm border rounded-xl"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong placeholder:text-ink-muted rounded-xl focus:outline-none focus:border-flame"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
-                سعر الشراء / التكلفة (ج.م) <span className="text-rose-500">*</span>
+              <label className="text-xs font-bold text-ink block mb-1">
+                سعر الشراء / التكلفة (ج.م) <span className="text-danger-text">*</span>
               </label>
               <input
                 type="number"
@@ -532,12 +516,12 @@ function ProductsContent() {
                 onChange={(e) =>
                   setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full h-11 px-3 text-sm border rounded-xl font-bold"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl font-bold focus:outline-none focus:border-flame"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
+              <label className="text-xs font-bold text-ink block mb-1">
                 مصاريف إضافية / شحن (ج.م)
               </label>
               <input
@@ -549,13 +533,13 @@ function ProductsContent() {
                   setFormData({ ...formData, extraCost: parseFloat(e.target.value) || 0 })
                 }
                 placeholder="0"
-                className="w-full h-11 px-3 text-sm border rounded-xl"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
-                سعر البيع للجمهور (ج.م) <span className="text-rose-500">*</span>
+              <label className="text-xs font-bold text-ink block mb-1">
+                سعر البيع للجمهور (ج.م) <span className="text-danger-text">*</span>
               </label>
               <input
                 type="number"
@@ -566,15 +550,15 @@ function ProductsContent() {
                 onChange={(e) =>
                   setFormData({ ...formData, salePrice: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full h-11 px-3 text-sm border rounded-xl font-black text-brand-700"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface rounded-xl font-black text-truffle dark:text-flame focus:outline-none focus:border-flame"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">هامش الربح المحسوب</label>
-              <div className="h-11 px-3 rounded-xl bg-slate-50 border flex items-center justify-between font-mono font-bold text-sm">
+              <label className="text-xs font-bold text-ink block mb-1">هامش الربح المحسوب</label>
+              <div className="h-11 px-3 rounded-xl bg-surface-alt border border-line flex items-center justify-between font-mono font-bold text-sm text-ink-strong">
                 <span>{formatPercent(liveMargin)}</span>
-                <span className="text-xs text-slate-400 font-sans">
+                <span className="text-xs text-ink-muted font-sans">
                   ربح: {formatCurrency(Math.max(0, formData.salePrice - (formData.costPrice + formData.extraCost)))}
                 </span>
               </div>
@@ -582,7 +566,7 @@ function ProductsContent() {
 
             {!editingProduct && (
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">رصيد أول المدة</label>
+                <label className="text-xs font-bold text-ink block mb-1">رصيد أول المدة</label>
                 <input
                   type="number"
                   min="0"
@@ -590,13 +574,13 @@ function ProductsContent() {
                   onChange={(e) =>
                     setFormData({ ...formData, openingStock: parseInt(e.target.value) || 0 })
                   }
-                  className="w-full h-11 px-3 text-sm border rounded-xl"
+                  className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
                 />
               </div>
             )}
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">حد تنبيه النواقص</label>
+              <label className="text-xs font-bold text-ink block mb-1">حد تنبيه النواقص</label>
               <input
                 type="number"
                 min="1"
@@ -604,23 +588,23 @@ function ProductsContent() {
                 onChange={(e) =>
                   setFormData({ ...formData, minStockAlert: parseInt(e.target.value) || 5 })
                 }
-                className="w-full h-11 px-3 text-sm border rounded-xl"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">وحدة القياس</label>
+              <label className="text-xs font-bold text-ink block mb-1">وحدة القياس</label>
               <input
                 type="text"
                 value={formData.unit}
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                 placeholder="قطعة، طقم، متر..."
-                className="w-full h-11 px-3 text-sm border rounded-xl"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong placeholder:text-ink-muted rounded-xl focus:outline-none focus:border-flame"
               />
             </div>
           </div>
 
-          <div className="pt-3 border-t flex justify-end gap-2">
+          <div className="pt-3 border-t border-divider flex justify-end gap-2">
             <Button type="button" variant="outline" size="md" onClick={() => setIsAddModalOpen(false)}>
               إلغاء
             </Button>
@@ -631,14 +615,12 @@ function ProductsContent() {
         </form>
       </Dialog>
 
-      {/* نافذة كاميرا الباركود */}
       <BarcodeScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onScan={handleBarcodeScanned}
       />
 
-      {/* نافذة طباعة ملصقات الباركود */}
       <BarcodeLabelPrinterModal
         isOpen={isLabelPrinterOpen}
         onClose={() => setIsLabelPrinterOpen(false)}
@@ -650,7 +632,7 @@ function ProductsContent() {
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={<div className="p-10 text-center text-slate-400">جاري تحميل المنتجات...</div>}>
+    <Suspense fallback={<TablePageSkeleton columns={7} rows={6} />}>
       <ProductsContent />
     </Suspense>
   );

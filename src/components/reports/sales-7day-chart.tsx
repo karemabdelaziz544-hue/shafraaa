@@ -25,7 +25,7 @@ export function Sales7DayChart({
       <CardHeader>
         <CardTitle className="text-sm font-bold flex items-center justify-between w-full">
           <span>مبيعات آخر ٧ أيام (حركة المبيعات اليومية)</span>
-          <Badge variant="info">مباشر</Badge>
+          <Badge variant="accent">مباشر</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-5">
@@ -34,10 +34,10 @@ export function Sales7DayChart({
             const scaleY = Math.max(0.08, Math.min(1, day.total / maxDailySales));
             return (
               <div key={day.date} className="flex-1 flex flex-col items-center gap-2 group">
-                <span className="text-[10px] font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[10px] font-bold text-ink-strong opacity-0 group-hover:opacity-100 transition-opacity">
                   {formatCurrency(day.total)}
                 </span>
-                <div className="w-full bg-slate-100 rounded-xl h-32 flex items-end overflow-hidden p-1">
+                <div className="w-full bg-surface-alt border border-divider rounded-xl h-32 flex items-end overflow-hidden p-1">
                   <m.div
                     initial={{ scaleY: 0, opacity: 0.4 }}
                     animate={{ scaleY, opacity: 1 }}
@@ -47,10 +47,10 @@ export function Sales7DayChart({
                       ease: MOTION_EASINGS.standard,
                     }}
                     style={{ transformOrigin: 'bottom center' }}
-                    className="w-full h-full bg-brand-600 hover:bg-brand-500 rounded-lg"
+                    className="w-full h-full bg-fantastic dark:bg-flame hover:bg-flame dark:hover:bg-truffle rounded-lg transition-colors"
                   />
                 </div>
-                <span className="text-xs font-bold text-slate-700">{day.label}</span>
+                <span className="text-xs font-bold text-ink">{day.label}</span>
               </div>
             );
           })}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,21 +37,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const isSaved = saveState === 'saved' && !isBusy;
 
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-[transform,opacity,background-color,border-color] duration-150 select-none active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 focus:outline-none focus:ring-2 focus:ring-offset-2';
+      'inline-flex items-center justify-center font-semibold rounded-xl transition-[transform,opacity,background-color,border-color,color] duration-150 select-none active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas';
 
     const variants = {
-      primary: 'bg-brand-600 hover:bg-brand-700 text-white shadow-sm shadow-brand-500/20 focus:ring-brand-500',
-      secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-800 focus:ring-slate-400',
-      outline: 'border border-slate-300 hover:bg-slate-50 text-slate-700 focus:ring-slate-400',
-      danger: 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm shadow-rose-500/20 focus:ring-rose-500',
-      ghost: 'hover:bg-slate-100 text-slate-700 focus:ring-slate-300',
-      success: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-500/20 focus:ring-emerald-500',
+      primary:
+        'bg-flame hover:bg-flame-hover text-flame-ink shadow-sm focus:ring-flame',
+      secondary:
+        'bg-oatmeal/55 hover:bg-oatmeal/80 text-ink-strong focus:ring-oatmeal',
+      outline:
+        'border border-line bg-surface hover:bg-surface-alt text-ink focus:ring-flame',
+      danger:
+        'bg-truffle hover:bg-truffle/90 text-truffle-ink shadow-sm focus:ring-truffle',
+      ghost: 'hover:bg-surface-alt text-ink focus:ring-line',
+      success:
+        'bg-success hover:bg-success/90 text-success-ink shadow-sm focus:ring-success',
     };
 
     const sizes = {
       sm: 'h-9 px-3 text-xs gap-1.5',
       md: 'h-11 px-4 text-sm gap-2',
-      lg: 'h-12 px-6 text-base gap-2 font-semibold',
+      lg: 'h-12 px-6 text-base gap-2 font-bold',
       xl: 'h-14 px-8 text-lg gap-2.5 font-bold',
     };
 
@@ -70,7 +76,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin motion-reduce:animate-none ml-1.5"
           />
         ) : isSaved ? (
-          <Check className="w-4 h-4 ml-1.5" />
+          <Check strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1.5 shrink-0" />
         ) : null}
         {isSaved ? <span>{savedText}</span> : children}
       </button>

@@ -3,18 +3,101 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 241, 245, 249;
+  /* ألوان لوحة MP072 المرجعية (RGB) */
+  --color-palladian: 238 233 223; /* #EEE9DF */
+  --color-oatmeal: 201 193 177;   /* #C9C1B1 */
+  --color-fantastic: 44 59 77;    /* #2C3B4D */
+  --color-abyssal: 27 38 50;      /* #1B2632 */
+  --color-flame: 255 177 98;      /* #FFB162 */
+  --color-flame-hover: 242 161 81;
+  --color-truffle: 163 81 57;     /* #A35139 */
+
+  /* الوضع الفاتح (Light Mode - Palladian + Blue Fantastic) */
+  --color-canvas: 238 233 223;        /* #EEE9DF */
+  --color-surface: 247 244 238;       /* #F7F4EE سطح البطاقات المرفوع */
+  --color-surface-alt: 231 225 213;   /* #E7E1D5 رؤوس الجداول والأسطح الثانوية */
+  --color-border: 201 193 177;        /* #C9C1B1 الحدود والفواصل */
+  --color-divider: 218 211 198;
+  --color-ink: 44 59 77;              /* #2C3B4D النص الأساسي */
+  --color-ink-strong: 27 38 50;       /* #1B2632 العناوين والأرقام القوية */
+  --color-ink-muted: 74 89 107;       /* #4A596B نص ثانوي بتباين >= 5.8:1 */
+  --color-accent-ink: 27 38 50;       /* نص داكن على الخلفية البرتقالية #FFB162 */
+  --color-secondary-ink: 238 233 223; /* نص فاتح #EEE9DF على الخلفية الداكنة */
+
+  /* حالات النجاح والتحذير والخطر المنسجمة مع الهوية (بتباين >= 4.5:1) */
+  --color-success: 47 94 78;          /* أخضر ميرمية هادئ #2F5E4E */
+  --color-success-bg: 227 235 229;
+  --color-success-border: 175 196 182;
+  --color-success-ink: 238 233 223;
+
+  --color-warning: 122 72 22;         /* كهرماني دافئ #7A4816 */
+  --color-warning-bg: 249 232 208;
+  --color-warning-border: 227 169 108;
+
+  --color-danger: 163 81 57;          /* Truffle Trouble #A35139 */
+  --color-danger-text: 133 61 41;     /* #853D29 */
+  --color-danger-bg: 244 225 219;
+  --color-danger-border: 214 165 150;
+  --color-danger-ink: 238 233 223;
+
+  --color-info: 44 59 77;
+  --color-info-bg: 224 221 213;
+  --color-info-border: 184 179 167;
+
+  /* الزوايا والظلال */
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 2px 0 rgb(27 38 50 / 0.06);
+  --shadow-elevated: 0 12px 32px -8px rgb(27 38 50 / 0.16);
+  --shadow-accent: 0 6px 18px -4px rgb(255 177 98 / 0.35);
+}
+
+.dark {
+  /* الوضع الداكن (Dark Mode - Abyssal #1B2632 + Blue Fantastic #2C3B4D) */
+  --color-canvas: 27 38 50;           /* #1B2632 */
+  --color-surface: 35 48 63;          /* #23303F */
+  --color-surface-alt: 44 59 77;      /* #2C3B4D */
+  --color-border: 68 85 104;          /* #445568 */
+  --color-divider: 54 70 89;
+  --color-ink: 238 233 223;           /* #EEE9DF */
+  --color-ink-strong: 247 244 238;
+  --color-ink-muted: 201 193 177;     /* #C9C1B1 */
+
+  --color-success: 134 197 170;
+  --color-success-bg: 30 56 47;
+  --color-success-border: 58 105 88;
+  --color-success-ink: 27 38 50;
+
+  --color-warning: 255 177 98;
+  --color-warning-bg: 62 43 24;
+  --color-warning-border: 140 96 48;
+
+  --color-danger: 163 81 57;
+  --color-danger-text: 235 152 128;
+  --color-danger-bg: 61 31 24;
+  --color-danger-border: 135 67 48;
+  --color-danger-ink: 238 233 223;
+
+  --color-info: 201 193 177;
+  --color-info-bg: 44 59 77;
+  --color-info-border: 78 96 117;
+
+  --shadow-card: 0 1px 3px 0 rgb(10 15 22 / 0.35);
+  --shadow-elevated: 0 16px 36px -8px rgb(8 12 18 / 0.55);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background-color: #f8fafc;
+  color: rgb(var(--color-ink));
+  background-color: rgb(var(--color-canvas));
   font-family: var(--font-cairo), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   direction: rtl;
   text-align: right;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* توحيد سُمك خط أيقونات Lucide في كامل التطبيق */
+.lucide {
+  stroke-width: 1.75;
 }
 
 /* طباعة الفواتير الحرارية والورقية */
@@ -23,7 +106,8 @@ body {
     display: none !important;
   }
   body, main {
-    background: white !important;
+    background: #ffffff !important;
+    color: #1B2632 !important;
     padding: 0 !important;
     margin: 0 !important;
   }

@@ -193,3 +193,18 @@ npm test
 - **سقف الزمن:** مدة كل حركة لا تتجاوز **300ms** (`0.14s` للأزرار والتوست، `0.19s` لانتقالات الصفحات المتوافقة مع RTL، `0.22s` للنوافذ والأدراج).
 - **تعديل الإعدادات:** يمكنك تعديل الثوابت `MOTION_DURATIONS` و `MOTION_EASINGS` و `MOTION_DISTANCES` داخل [`src/lib/motion.ts`](file:///Users/karemabdelaziz/shifra/shafraaa/src/lib/motion.ts) لتغيير سرعة أو مسافة الحركات في التطبيق بالكامل دفعة واحدة.
 - **احترام إمكانية الوصول:** يتعرف `MotionProvider` تلقائياً على تفضيل المتصفح `prefers-reduced-motion` ويعطل الحركات غير الضرورية.
+
+---
+
+## 🎨 تخصيص الألوان والهوية البصرية (Design Tokens & Theme)
+
+يستخدم التطبيق لوحة ألوان **MP072** بالكامل عبر متغيرات CSS ورموز تصميم موحدة دون أي ألوان ثابتة مبعثرة في المكونات:
+
+- **ملف الرموز المرجعي:** `src/lib/design-tokens.ts` يحتوي على قيم الألوان (`PALETTE`)، وأوضاع الإضاءة (`THEME_MODES`)، والزوايا (`RADII`)، والمسافات (`SPACING`)، والظلال (`SHADOWS`)، ومقياس الأيقونات الموحد (`ICON_TOKENS` باستخدام `lucide-react` بنمط Outline وبسُمك خط `1.75`).
+- **متغيرات CSS:** معرّفة داخل `src/app/globals.css` في `:root` (الوضع الفاتح على خلفية Palladian `#EEE9DF`) و`.dark` (الوضع الداكن على خلفية Abyssal `#1B2632`).
+- **ربط Tailwind:** جميع أسماء الألوان الدلالية (`canvas`, `surface`, `surface-alt`, `line`, `ink`, `ink-strong`, `ink-muted`, `flame`, `truffle`, `fantastic`, `abyssal`, `palladian`, `oatmeal`, `success`, `warning`, `danger`, `info`) مmapped في `tailwind.config.js`.
+- **تغيير الثيم مستقبلاً:**
+  1. عدّل قيم RGB في `:root` و`.dark` بملف `src/app/globals.css` (وحدّث `PALETTE` في `src/lib/design-tokens.ts` للمواءمة).
+  2. حدّث لون شريط المتصفح والـ PWA في `public/manifest.json` و`src/app/layout.tsx` (`themeColor`) و`src/components/layout/theme-provider.tsx`.
+  3. للتبديل بين الوضع الفاتح والداكن أثناء الاستخدام: اضغط أيقونة الشمس/القمر في الشريط العلوي أو من صفحة **الإعدادات** (`/settings`).
+

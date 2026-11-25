@@ -18,6 +18,7 @@ import { Skeleton, FormReportSkeleton } from '@/components/ui/skeleton';
 import { AnimatedNumber } from '@/components/motion/animated-number';
 import { calculatePeriodNetProfit } from '@/lib/calculations';
 import { formatCurrency } from '@/lib/formatters';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 const Sales7DayChart = dynamic(
   () => import('@/components/reports/sales-7day-chart').then((mod) => mod.Sales7DayChart),
@@ -41,13 +42,12 @@ export default function ReportsPage() {
   } = useShop();
 
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | 'all'>('month');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
   if (isInitialLoading) {
     return <FormReportSkeleton />;
   }
 
-  // تصفية العمليات حسب الفترة المحددة
   const filteredSales = salesInvoices.filter((inv) => {
     if (selectedPeriod === 'all') return true;
     if (selectedPeriod === 'month') return inv.createdAt.startsWith(selectedMonth);
@@ -72,7 +72,6 @@ export default function ReportsPage() {
     return d.date.startsWith(selectedMonth.slice(0, 4));
   });
 
-  // الحسابات المالية الدقيقة
   const totalSalesRevenue = filteredSales.reduce((sum, inv) => sum + inv.totalAmount, 0);
   const totalCostOfGoodsSold = filteredSales.reduce((sum, inv) => sum + inv.totalCost, 0);
   const totalGrossProfit = filteredSales.reduce((sum, inv) => sum + inv.grossProfit, 0);
@@ -81,7 +80,6 @@ export default function ReportsPage() {
     .filter((e) => e.type === 'variable')
     .reduce((sum, e) => sum + e.amount, 0);
 
-  // المصروفات الثابتة تخصم مرة واحدة فقط للفترة
   const fixedExpenses = filteredExpenses
     .filter((e) => e.type === 'fixed')
     .reduce((sum, e) => sum + e.amount, 0);
@@ -89,7 +87,6 @@ export default function ReportsPage() {
   const totalWithdrawals = filteredWithdrawals.reduce((sum, w) => sum + w.amount, 0);
   const totalDamagedLoss = filteredDamaged.reduce((sum, d) => sum + d.totalLoss, 0);
 
-  // صافي الربح الفعلي
   const netProfitResult = calculatePeriodNetProfit({
     totalGrossProfit,
     variableExpenses,
@@ -97,18 +94,13 @@ export default function ReportsPage() {
     damagedLoss: totalDamagedLoss,
   });
 
-  // قيمة البضاعة بالمخزن بالتكلفة
   const totalStockCostValue = products.reduce(
     (sum, p) => sum + p.currentStock * (p.costPrice + p.extraCost),
     0
   );
-
-  // إجمالي ديون العملاء
   const totalCustomerDebt = customers.reduce((sum, c) => sum + c.currentBalance, 0);
-  // إجمالي مستحقات الموردين
   const totalSupplierOwed = suppliers.reduce((sum, s) => sum + s.owedBalance, 0);
 
-  // الأصناف الأكثر مبيعاً
   const productSalesMap: Record<string, { name: string; quantity: number; revenue: number }> = {};
   filteredSales.forEach((inv) => {
     inv.items.forEach((item) => {
@@ -124,7 +116,6 @@ export default function ReportsPage() {
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 5);
 
-  // مبيعات آخر 7 أيام للرسم البياني
   const last7Days: { date: string; label: string; total: number }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -139,11 +130,9 @@ export default function ReportsPage() {
 
   const maxDailySales = Math.max(...last7Days.map((d) => d.total), 100);
 
-  // تصدير التقرير المالي إلى إكسيل XLSX
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    // 1. ملخص قائمة الدخل
     const incomeStatementData = [
       { 'البيان': 'إجمالي إيراد المبيعات', 'المبلغ (ج.م)': totalSalesRevenue },
       { 'البيان': 'تكلفة البضاعة المباعة (COGS)', 'المبلغ (ج.م)': totalCostOfGoodsSold },
@@ -156,7 +145,6 @@ export default function ReportsPage() {
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeStatementData), 'قائمة الدخل والأرباح');
 
-    // 2. تقرير الهالك والتوالف
     if (filteredDamaged.length > 0) {
       const damagedExport = filteredDamaged.map((d) => ({
         'اسم الصنف': d.productName,
@@ -170,7 +158,6 @@ export default function ReportsPage() {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(damagedExport), 'الهالك والتوالف');
     }
 
-    // 2. تقرير المبيعات
     const salesExport = filteredSales.map((inv) => ({
       'رقم الفاتورة': inv.invoiceNumber,
       'العميل': inv.customerName,
@@ -190,69 +177,69 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* رأس الصفحة وأزرار التصدير والطباعة */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-brand-600" />
+          <h1 className="text-xl sm:text-2xl font-black text-ink-strong flex items-center gap-2">
+            <BarChart3 strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
             <span>التقارير المالية وصافي الأرباح</span>
           </h1>
-          <p className="text-xs text-slate-500">
-            أهلًا يا كريم - تقارير دقيقة بالجنيه المصري تفرق تماماً بين النقدية والأرباح
+          <p className="text-xs text-ink-muted">
+            أهلًا يا {ownerName} - تقارير دقيقة بالجنيه المصري تفرق تماماً بين النقدية والأرباح
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 no-print">
           <Button variant="outline" size="md" onClick={() => window.print()} className="gap-1.5">
-            <Printer className="w-4 h-4" />
+            <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
             <span>طباعة PDF</span>
           </Button>
           <Button variant="primary" size="md" onClick={exportToExcel} className="gap-1.5">
-            <Download className="w-4 h-4" />
+            <Download strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
             <span>تصدير إكسيل (XLSX)</span>
           </Button>
         </div>
       </div>
 
       {/* شريط اختيار الفترة */}
-      <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-surface p-3.5 rounded-2xl border border-line flex flex-wrap items-center justify-between gap-3 no-print">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-slate-500" />
-          <span className="text-xs font-bold text-slate-700">فترة التقرير:</span>
+          <Calendar strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-ink-muted" />
+          <span className="text-xs font-bold text-ink">فترة التقرير:</span>
           <input
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="h-9 px-3 text-xs border rounded-lg bg-slate-50 font-bold"
+            className="h-9 px-3 text-xs border border-line rounded-lg bg-surface-alt text-ink-strong font-bold focus:outline-none focus:border-flame"
           />
         </div>
 
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setSelectedPeriod('month')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
               selectedPeriod === 'month'
-                ? 'bg-brand-600 text-white border-brand-600'
-                : 'bg-slate-50 text-slate-700 border-slate-200'
+                ? 'bg-flame text-abyssal border-flame'
+                : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
             }`}
           >
             شهري ({selectedMonth})
           </button>
           <button
             onClick={() => setSelectedPeriod('year')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
               selectedPeriod === 'year'
-                ? 'bg-brand-600 text-white border-brand-600'
-                : 'bg-slate-50 text-slate-700 border-slate-200'
+                ? 'bg-flame text-abyssal border-flame'
+                : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
             }`}
           >
             سنوي ({selectedMonth.slice(0, 4)})
           </button>
           <button
             onClick={() => setSelectedPeriod('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
               selectedPeriod === 'all'
-                ? 'bg-brand-600 text-white border-brand-600'
-                : 'bg-slate-50 text-slate-700 border-slate-200'
+                ? 'bg-flame text-abyssal border-flame'
+                : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
             }`}
           >
             شامل كل الفترات
@@ -262,68 +249,63 @@ export default function ReportsPage() {
 
       {/* البطاقات المالية الكبرى: صافي الربح وقائمة الدخل */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* صافي الربح */}
-        <Card className="bg-gradient-to-br from-emerald-800 to-emerald-600 text-white shadow-lg sm:col-span-2 lg:col-span-1">
+        <Card className="bg-gradient-to-br from-abyssal to-fantastic text-palladian border-abyssal shadow-elevated sm:col-span-2 lg:col-span-1">
           <CardContent className="p-5">
-            <span className="text-xs font-bold text-emerald-100 block mb-1">
+            <span className="text-xs font-bold text-oatmeal block mb-1">
               صافي الربح الفعلي للفترة
             </span>
-            <div className="text-2xl sm:text-3xl font-black font-mono">
+            <div className="text-2xl sm:text-3xl font-black font-mono text-flame">
               <AnimatedNumber value={netProfitResult.netProfit} />
             </div>
-            <p className="text-[11px] text-emerald-100 mt-2">
+            <p className="text-[11px] text-oatmeal mt-2">
               مجمل الربح - المصروفات - خسائر الهالك
             </p>
           </CardContent>
         </Card>
 
-        {/* إجمالي المبيعات */}
         <Card>
           <CardContent className="p-5">
-            <span className="text-xs font-bold text-slate-500 block mb-1">إجمالي المبيعات</span>
-            <div className="text-2xl font-black text-slate-900 font-mono">
+            <span className="text-xs font-bold text-ink-muted block mb-1">إجمالي المبيعات</span>
+            <div className="text-2xl font-black text-ink-strong font-mono">
               <AnimatedNumber value={totalSalesRevenue} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">عدد الفواتير: {filteredSales.length}</p>
+            <p className="text-xs text-ink-muted mt-1">عدد الفواتير: {filteredSales.length}</p>
           </CardContent>
         </Card>
 
-        {/* تكلفة البضاعة المباعة */}
         <Card>
           <CardContent className="p-5">
-            <span className="text-xs font-bold text-slate-500 block mb-1">
+            <span className="text-xs font-bold text-ink-muted block mb-1">
               تكلفة البضاعة المباعة (COGS)
             </span>
-            <div className="text-2xl font-black text-slate-700 font-mono">
+            <div className="text-2xl font-black text-ink font-mono">
               <AnimatedNumber value={totalCostOfGoodsSold} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              مجمل الربح: <span className="font-bold text-emerald-600">{formatCurrency(totalGrossProfit)}</span>
+            <p className="text-xs text-ink-muted mt-1">
+              مجمل الربح: <span className="font-bold text-success">{formatCurrency(totalGrossProfit)}</span>
             </p>
           </CardContent>
         </Card>
 
-        {/* إجمالي المصروفات */}
         <Card>
           <CardContent className="p-5">
-            <span className="text-xs font-bold text-slate-500 block mb-1">إجمالي المصروفات</span>
-            <div className="text-2xl font-black text-rose-600 font-mono">
+            <span className="text-xs font-bold text-ink-muted block mb-1">إجمالي المصروفات</span>
+            <div className="text-2xl font-black text-danger-text font-mono">
               <AnimatedNumber value={netProfitResult.totalExpenses} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-ink-muted mt-1">
               ثابتة: {fixedExpenses} | متغيرة: {variableExpenses}
             </p>
           </CardContent>
         </Card>
 
-        {/* خسائر الهالك والتوالف */}
         <Card>
           <CardContent className="p-5">
-            <span className="text-xs font-bold text-slate-500 block mb-1">خسائر الهالك والتوالف</span>
-            <div className="text-2xl font-black text-amber-700 font-mono">
+            <span className="text-xs font-bold text-ink-muted block mb-1">خسائر الهالك والتوالف</span>
+            <div className="text-2xl font-black text-warning font-mono">
               <AnimatedNumber value={totalDamagedLoss} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-ink-muted mt-1">
               عدد البنود: {filteredDamaged.length} بند
             </p>
           </CardContent>
@@ -333,35 +315,34 @@ export default function ReportsPage() {
       {/* رسم بياني محمّل كسولاً لمبيعات آخر 7 أيام */}
       <Sales7DayChart days={last7Days} maxDailySales={maxDailySales} />
 
-      {/* قائمتان متجاورتان: الأصناف الأكثر مبيعاً + أرصدة الأصول والديون */}
+      {/* قائمتان متجاورتان */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* الأصناف الأكثر مبيعاً */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Package className="w-4 h-4 text-brand-600" />
+              <Package strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-truffle dark:text-flame" />
               <span>الأصناف الأكثر مبيعاً وطلباً</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {topSellingProducts.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
+              <div className="p-8 text-center text-ink-muted text-xs">
                 لا توجد مبيعات مسجلة في هذه الفترة.
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-divider">
                 {topSellingProducts.map((p, idx) => (
                   <div key={idx} className="p-3.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-brand-50 text-brand-700 font-bold text-xs flex items-center justify-center">
+                      <span className="w-6 h-6 rounded-full bg-flame/25 text-ink-strong font-bold text-xs flex items-center justify-center">
                         {idx + 1}
                       </span>
                       <div>
-                        <p className="text-xs font-bold text-slate-900">{p.name}</p>
-                        <p className="text-[10px] text-slate-400">الكمية المباعة: {p.quantity} قطعة</p>
+                        <p className="text-xs font-bold text-ink-strong">{p.name}</p>
+                        <p className="text-[10px] text-ink-muted">الكمية المباعة: {p.quantity} قطعة</p>
                       </div>
                     </div>
-                    <span className="font-black text-xs font-mono text-brand-700">
+                    <span className="font-black text-xs font-mono text-truffle dark:text-flame">
                       {formatCurrency(p.revenue)}
                     </span>
                   </div>
@@ -371,36 +352,35 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        {/* أرصدة الأصول والديون */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-success" />
               <span>ملخص الأصول والديون والمسحوبات</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
-              <span className="text-slate-600 font-medium">قيمة بضاعة المخزن (بسعر التكلفة):</span>
-              <span className="font-black font-mono text-slate-900">{formatCurrency(totalStockCostValue)}</span>
+            <div className="p-3 rounded-xl bg-surface-alt border border-line flex items-center justify-between">
+              <span className="text-ink font-medium">قيمة بضاعة المخزن (بسعر التكلفة):</span>
+              <span className="font-black font-mono text-ink-strong">{formatCurrency(totalStockCostValue)}</span>
             </div>
 
-            <div className="p-3 rounded-xl bg-rose-50 flex items-center justify-between border border-rose-100">
-              <span className="text-rose-800 font-medium">ديون العملاء لنا في السوق (آجل):</span>
-              <span className="font-black font-mono text-rose-700">{formatCurrency(totalCustomerDebt)}</span>
+            <div className="p-3 rounded-xl bg-danger-bg flex items-center justify-between border border-danger-border">
+              <span className="text-danger-text font-medium">ديون العملاء لنا في السوق (آجل):</span>
+              <span className="font-black font-mono text-danger-text">{formatCurrency(totalCustomerDebt)}</span>
             </div>
 
-            <div className="p-3 rounded-xl bg-blue-50 flex items-center justify-between border border-blue-100">
-              <span className="text-blue-800 font-medium">مستحقات الموردين علينا (دين):</span>
-              <span className="font-black font-mono text-blue-700">{formatCurrency(totalSupplierOwed)}</span>
+            <div className="p-3 rounded-xl bg-info-bg flex items-center justify-between border border-info-border">
+              <span className="text-ink-strong font-medium">مستحقات الموردين علينا (دين):</span>
+              <span className="font-black font-mono text-ink-strong">{formatCurrency(totalSupplierOwed)}</span>
             </div>
 
-            <div className="p-3 rounded-xl bg-amber-50 flex items-center justify-between border border-amber-100">
+            <div className="p-3 rounded-xl bg-warning-bg flex items-center justify-between border border-warning-border">
               <div>
-                <span className="text-amber-900 font-medium block">مسحوبات المالك ({ownerName}):</span>
-                <span className="text-[10px] text-amber-700">لا تعتبر مصروفاً ولا تخصم من الأرباح</span>
+                <span className="text-ink-strong font-medium block">مسحوبات المالك ({ownerName}):</span>
+                <span className="text-[10px] text-warning">لا تعتبر مصروفاً ولا تخصم من الأرباح</span>
               </div>
-              <span className="font-black font-mono text-amber-800">{formatCurrency(totalWithdrawals)}</span>
+              <span className="font-black font-mono text-warning">{formatCurrency(totalWithdrawals)}</span>
             </div>
           </CardContent>
         </Card>

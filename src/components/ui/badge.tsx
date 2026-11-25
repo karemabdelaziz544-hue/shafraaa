@@ -2,17 +2,18 @@ import React from 'react';
 import { cn } from './button';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'danger' | 'warning' | 'purple' | 'info';
+  variant?: 'default' | 'success' | 'danger' | 'warning' | 'purple' | 'info' | 'accent';
 }
 
 export function Badge({ className, variant = 'default', children, ...props }: BadgeProps) {
   const variants = {
-    default: 'bg-slate-100 text-slate-800 border-slate-200',
-    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    danger: 'bg-rose-50 text-rose-700 border-rose-200',
-    warning: 'bg-amber-50 text-amber-800 border-amber-200',
-    purple: 'bg-purple-50 text-purple-700 border-purple-200',
-    info: 'bg-blue-50 text-blue-700 border-blue-200',
+    default: 'bg-oatmeal/45 text-ink-strong border-line',
+    success: 'bg-success-bg text-success border-success-border',
+    danger: 'bg-danger-bg text-danger-text border-danger-border',
+    warning: 'bg-warning-bg text-warning border-warning-border',
+    purple: 'bg-danger-bg text-danger-text border-danger-border',
+    accent: 'bg-flame/25 text-ink-strong border-flame',
+    info: 'bg-info-bg text-ink-strong border-info-border',
   };
 
   return (

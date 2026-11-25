@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
-  Receipt,
+  ScrollText,
   Plus,
   Search,
   RotateCcw,
@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
 import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 const InvoicePrintView = dynamic(
   () => import('@/components/invoice-print-view').then((mod) => mod.InvoicePrintView),
@@ -47,7 +48,6 @@ export default function SalesHistoryPage() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [printInvoice, setPrintInvoice] = useState<SaleInvoice | null>(null);
 
-  // حالة نافذة المرتجع
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [returnSaveState, setReturnSaveState] = useState<SaveButtonState>('idle');
   const returnLockRef = useRef(false);
@@ -162,61 +162,59 @@ export default function SalesHistoryPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Receipt className="w-6 h-6 text-brand-600" />
+          <h1 className="text-xl sm:text-2xl font-black text-ink-strong flex items-center gap-2">
+            <ScrollText strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
             <span>سجل فواتير المبيعات والمرتجع</span>
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-muted">
             أهلًا يا {ownerName} - متابعة كاملة للفواتير، الكميات المرتجعة والمتبقية، وسجل المرتجعات
           </p>
         </div>
 
         <Link href="/sales/new">
           <Button variant="primary" size="md">
-            <Plus className="w-4 h-4 ml-1" />
+            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
             <span>فاتورة جديدة (POS)</span>
           </Button>
         </Link>
       </div>
 
       {returnSuccess && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center justify-between gap-2">
+        <div className="p-3.5 bg-success-bg border border-success-border rounded-2xl text-success text-xs font-bold flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-success shrink-0" />
             <span>{returnSuccess}</span>
           </span>
-          <button type="button" onClick={() => setReturnSuccess(null)} className="text-emerald-700 hover:underline">
+          <button type="button" onClick={() => setReturnSuccess(null)} className="text-success hover:underline">
             إخفاء
           </button>
         </div>
       )}
 
-      {/* شريط البحث والتصفية */}
       <div className="relative">
-        <Search className="w-5 h-5 text-slate-400 absolute right-3.5 top-3" />
+        <Search strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-ink-muted absolute right-3.5 top-3" />
         <input
           type="text"
           placeholder="ابحث برقم الفاتورة أو اسم العميل..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full h-11 pr-11 pl-4 rounded-xl border border-slate-300 bg-white text-sm focus:border-brand-500 focus:outline-none"
+          className="w-full h-11 pr-11 pl-4 rounded-xl border border-line bg-surface text-ink-strong placeholder:text-ink-muted text-sm focus:border-flame focus:outline-none focus:ring-2 focus:ring-flame/25"
         />
       </div>
 
-      {/* قائمة الفواتير */}
       <Card>
         <CardContent className="p-0 overflow-x-auto">
           {isInitialLoading ? (
             <TableSkeletonRows columns={8} rows={6} />
           ) : filteredInvoices.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm">
+            <div className="p-12 text-center text-ink-muted text-sm">
               لا توجد فواتير مبيعات مطابقة للبحث.
             </div>
           ) : (
             <table className="w-full text-right text-xs sm:text-sm">
-              <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <thead className="bg-surface-alt text-ink font-bold border-b border-line">
                 <tr>
                   <th className="p-3 sm:p-4">رقم الفاتورة</th>
                   <th className="p-3 sm:p-4">العميل</th>
@@ -228,16 +226,16 @@ export default function SalesHistoryPage() {
                   <th className="p-3 sm:p-4 text-center">إجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-divider">
                 {filteredInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3 sm:p-4 font-mono font-bold text-brand-700">
+                  <tr key={inv.id} className="hover:bg-surface-alt/60 transition-colors">
+                    <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
                       {inv.invoiceNumber}
-                      <p className="text-[10px] text-slate-400 font-normal">
+                      <p className="text-[10px] text-ink-muted font-normal">
                         {formatArabicDateTime(inv.createdAt)}
                       </p>
                     </td>
-                    <td className="p-3 sm:p-4 font-bold text-slate-800">{inv.customerName}</td>
+                    <td className="p-3 sm:p-4 font-bold text-ink-strong">{inv.customerName}</td>
                     <td className="p-3 sm:p-4">{getInvoiceStatusBadge(inv.status)}</td>
                     <td className="p-3 sm:p-4">
                       <Badge
@@ -245,10 +243,10 @@ export default function SalesHistoryPage() {
                           inv.paymentMethod === 'cash'
                             ? 'success'
                             : inv.paymentMethod === 'wallet'
-                            ? 'warning'
+                            ? 'accent'
                             : inv.paymentMethod === 'instapay'
-                            ? 'purple'
-                            : 'info'
+                            ? 'info'
+                            : 'danger'
                         }
                       >
                         {inv.paymentMethod === 'cash'
@@ -260,17 +258,17 @@ export default function SalesHistoryPage() {
                           : 'آجل'}
                       </Badge>
                     </td>
-                    <td className="p-3 sm:p-4 font-black text-slate-900">
+                    <td className="p-3 sm:p-4 font-black text-ink-strong">
                       {formatCurrency(inv.totalAmount)}
                     </td>
-                    <td className="p-3 sm:p-4 font-black text-emerald-600">
+                    <td className="p-3 sm:p-4 font-black text-success">
                       {formatCurrency(inv.grossProfit)}
                     </td>
                     <td className="p-3 sm:p-4 font-bold">
                       {inv.remainingAmount > 0 ? (
-                        <span className="text-rose-600">{formatCurrency(inv.remainingAmount)}</span>
+                        <span className="text-danger-text">{formatCurrency(inv.remainingAmount)}</span>
                       ) : (
-                        <span className="text-emerald-600">خالص</span>
+                        <span className="text-success">خالص</span>
                       )}
                     </td>
                     <td className="p-3 sm:p-4 text-center">
@@ -281,13 +279,13 @@ export default function SalesHistoryPage() {
                           onClick={() => setPrintInvoice(inv)}
                           title="طباعة إيصال الفاتورة"
                         >
-                          <Printer className="w-3.5 h-3.5" />
+                          <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedInvoiceId(inv.id)}
-                          className="text-xs text-brand-600"
+                          className="text-xs text-truffle dark:text-flame font-bold"
                         >
                           التفاصيل والمرتجع
                         </Button>
@@ -310,64 +308,63 @@ export default function SalesHistoryPage() {
           maxWidth="2xl"
         >
           <div className="space-y-5">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-3.5 rounded-xl text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-surface-alt border border-line p-3.5 rounded-xl text-xs">
               <div>
-                <span className="text-slate-500 block">الحالة:</span>
+                <span className="text-ink-muted block">الحالة:</span>
                 <div className="mt-1">{getInvoiceStatusBadge(selectedInvoice.status)}</div>
               </div>
               <div>
-                <span className="text-slate-500 block">العميل:</span>
-                <p className="font-bold mt-0.5">{selectedInvoice.customerName}</p>
+                <span className="text-ink-muted block">العميل:</span>
+                <p className="font-bold text-ink-strong mt-0.5">{selectedInvoice.customerName}</p>
               </div>
               <div>
-                <span className="text-slate-500 block">الإجمالي:</span>
-                <p className="font-bold text-brand-700 mt-0.5">{formatCurrency(selectedInvoice.totalAmount)}</p>
+                <span className="text-ink-muted block">الإجمالي:</span>
+                <p className="font-bold text-truffle dark:text-flame mt-0.5">{formatCurrency(selectedInvoice.totalAmount)}</p>
               </div>
               <div>
-                <span className="text-slate-500 block">المتبقي (آجل):</span>
-                <p className={`font-bold mt-0.5 ${selectedInvoice.remainingAmount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                <span className="text-ink-muted block">المتبقي (آجل):</span>
+                <p className={`font-bold mt-0.5 ${selectedInvoice.remainingAmount > 0 ? 'text-danger-text' : 'text-success'}`}>
                   {selectedInvoice.remainingAmount > 0 ? formatCurrency(selectedInvoice.remainingAmount) : 'خالص'}
                 </p>
               </div>
               <div>
-                <span className="text-slate-500 block">التاريخ:</span>
-                <p className="font-medium mt-0.5">{formatArabicDateTime(selectedInvoice.createdAt)}</p>
+                <span className="text-ink-muted block">التاريخ:</span>
+                <p className="font-medium text-ink mt-0.5">{formatArabicDateTime(selectedInvoice.createdAt)}</p>
               </div>
             </div>
 
-            {/* بنود الفاتورة مع الكميات المباعة والمرتجعة والمتبقية */}
             <div>
-              <h4 className="text-xs font-bold text-slate-700 mb-2">بنود الفاتورة وحالة الإرجاع:</h4>
-              <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+              <h4 className="text-xs font-bold text-ink mb-2">بنود الفاتورة وحالة الإرجاع:</h4>
+              <div className="border border-line rounded-xl overflow-hidden divide-y divide-divider">
                 {selectedInvoice.items.map((item) => {
                   const lineState = calculateReturnableLineState(item.quantity, item.returnedQuantity || 0);
                   return (
-                    <div key={item.id} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white">
+                    <div key={item.id} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-surface">
                       <div>
-                        <p className="text-xs font-bold text-slate-900">{item.productName}</p>
+                        <p className="text-xs font-bold text-ink-strong">{item.productName}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px]">
-                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold">
+                          <span className="px-2 py-0.5 rounded bg-surface-alt border border-line text-ink font-bold">
                             المباع: {lineState.soldQuantity}
                           </span>
-                          <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-bold">
+                          <span className="px-2 py-0.5 rounded bg-warning-bg text-warning font-bold">
                             المرتجع حتى الآن: {lineState.returnedQuantity}
                           </span>
                           <span
                             className={`px-2 py-0.5 rounded font-bold ${
                               lineState.isFullyReturned
-                                ? 'bg-rose-50 text-rose-700'
-                                : 'bg-emerald-50 text-emerald-700'
+                                ? 'bg-danger-bg text-danger-text'
+                                : 'bg-success-bg text-success'
                             }`}
                           >
                             المتبقي للإرجاع: {lineState.remainingReturnableQuantity}
                           </span>
-                          <span className="text-slate-500">
+                          <span className="text-ink-muted">
                             × {formatCurrency(item.unitPrice)}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between sm:justify-end gap-2">
-                        <span className="text-xs font-black">{formatCurrency(item.lineTotal)}</span>
+                        <span className="text-xs font-black text-ink-strong">{formatCurrency(item.lineTotal)}</span>
                         {lineState.isFullyReturned ? (
                           <Badge variant="danger" className="text-[10px]">
                             تم إرجاع الكمية بالكامل
@@ -377,9 +374,9 @@ export default function SalesHistoryPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleOpenReturn(selectedInvoice, item)}
-                            className="text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
+                            className="text-xs text-danger-text border-danger-border hover:bg-danger-bg"
                           >
-                            <RotateCcw className="w-3 h-3 ml-1" />
+                            <RotateCcw strokeWidth={ICON_TOKENS.strokeWidth} className="w-3 h-3 ml-1" />
                             <span>إرجاع</span>
                           </Button>
                         )}
@@ -390,31 +387,30 @@ export default function SalesHistoryPage() {
               </div>
             </div>
 
-            {/* سجل المرتجعات على الفاتورة */}
             <div>
-              <h4 className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                <History className="w-4 h-4 text-rose-600" />
+              <h4 className="text-xs font-bold text-ink mb-2 flex items-center gap-1.5">
+                <History strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-danger-text" />
                 <span>سجل المرتجعات على هذه الفاتورة ({selectedInvoiceReturns.length})</span>
               </h4>
               {selectedInvoiceReturns.length === 0 ? (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-400">
+                <div className="p-4 rounded-xl bg-surface-alt border border-line text-center text-xs text-ink-muted">
                   لم تتم أي عمليات مرتجع على هذه الفاتورة حتى الآن.
                 </div>
               ) : (
-                <div className="border border-rose-200 rounded-xl overflow-hidden divide-y divide-rose-100 bg-rose-50/20">
+                <div className="border border-danger-border rounded-xl overflow-hidden divide-y divide-danger-border/50 bg-danger-bg/35">
                   {selectedInvoiceReturns.map((ret) => (
                     <div key={ret.id} className="p-3 text-xs space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-bold text-slate-900">
+                        <span className="font-bold text-ink-strong">
                           {ret.items.map((ri) => `${ri.productName} (${ri.quantity} قطعة - ${ri.condition === 'sellable' ? 'سليم' : 'تالف'})`).join('، ')}
                         </span>
-                        <span className="font-mono font-black text-rose-700">
+                        <span className="font-mono font-black text-danger-text">
                           استرداد: {formatCurrency(ret.refundAmount)}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-muted">
                         <span>
-                          التاريخ: {formatArabicDateTime(ret.createdAt)} | بواسطة: <strong className="text-slate-700">{ret.createdByName || ownerName}</strong>
+                          التاريخ: {formatArabicDateTime(ret.createdAt)} | بواسطة: <strong className="text-ink-strong">{ret.createdByName || ownerName}</strong>
                         </span>
                         <span>
                           الطريقة:{' '}
@@ -428,7 +424,7 @@ export default function SalesHistoryPage() {
                         </span>
                       </div>
                       {ret.reason && (
-                        <p className="text-[11px] text-slate-600">السبب: {ret.reason}</p>
+                        <p className="text-[11px] text-ink">السبب: {ret.reason}</p>
                       )}
                     </div>
                   ))}
@@ -439,7 +435,7 @@ export default function SalesHistoryPage() {
         </Dialog>
       )}
 
-      {/* نافذة تسجيل المرتجع وتحديد الحالة (سليم أو تالف) */}
+      {/* نافذة تسجيل المرتجع */}
       {isReturnModalOpen && returnItem && (
         <Dialog
           isOpen={true}
@@ -448,20 +444,20 @@ export default function SalesHistoryPage() {
           maxWidth="md"
         >
           <div className="space-y-4">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 space-y-1">
-              <p>المباع بالفاتورة: <strong>{returnItem.soldQty}</strong> | المرتجع سابقاً: <strong>{returnItem.alreadyReturnedQty}</strong> | المتبقي للإرجاع: <strong className="text-emerald-700">{returnItem.remainingQty}</strong></p>
-              <p className="text-[11px] text-blue-700">المرتجع السليم يعود للمخزون فوراً، والتالف يسجل كخسارة ولا يرفع المخزون المتاح للبيع.</p>
+            <div className="p-3 bg-info-bg border border-info-border rounded-xl text-xs text-ink-strong space-y-1">
+              <p>المباع بالفاتورة: <strong>{returnItem.soldQty}</strong> | المرتجع سابقاً: <strong>{returnItem.alreadyReturnedQty}</strong> | المتبقي للإرجاع: <strong className="text-success">{returnItem.remainingQty}</strong></p>
+              <p className="text-[11px] text-ink-muted">المرتجع السليم يعود للمخزون فوراً، والتالف يسجل كخسارة ولا يرفع المخزون المتاح للبيع.</p>
             </div>
 
             {returnError && (
-              <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-800 font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="p-3 bg-danger-bg border border-danger-border rounded-xl text-xs text-danger-text font-bold flex items-center gap-2">
+                <AlertCircle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-danger-text shrink-0" />
                 <span>{returnError}</span>
               </div>
             )}
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">الكمية المرتجعة</label>
+              <label className="text-xs font-bold text-ink block mb-1">الكمية المرتجعة</label>
               <input
                 type="number"
                 step="0.01"
@@ -471,28 +467,28 @@ export default function SalesHistoryPage() {
                   setReturnError(null);
                   setReturnItem({ ...returnItem, quantityInput: e.target.value });
                 }}
-                className="w-full h-10 px-3 text-sm border rounded-xl font-bold"
+                className="w-full h-10 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl font-bold focus:outline-none focus:border-flame"
               />
               {!liveReturnValidation.valid && returnItem.quantityInput !== '' && (
-                <p className="text-[11px] text-rose-600 font-bold mt-1">
+                <p className="text-[11px] text-danger-text font-bold mt-1">
                   {liveReturnValidation.error}
                 </p>
               )}
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-ink-muted mt-1">
                 الحد الأقصى المتاح للإرجاع الآن: {returnItem.remainingQty} قطعة
               </p>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">حالة البضاعة المرتجعة</label>
+              <label className="text-xs font-bold text-ink block mb-1">حالة البضاعة المرتجعة</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setReturnItem({ ...returnItem, isSellable: true })}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                  className={`p-3 rounded-xl border text-xs font-bold transition-colors ${
                     returnItem.isSellable
-                      ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-slate-50 text-slate-700 border-slate-200'
+                      ? 'bg-success text-success-ink border-success'
+                      : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
                   }`}
                 >
                   بضاعة سليمة (تعود للمخزون)
@@ -500,10 +496,10 @@ export default function SalesHistoryPage() {
                 <button
                   type="button"
                   onClick={() => setReturnItem({ ...returnItem, isSellable: false })}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                  className={`p-3 rounded-xl border text-xs font-bold transition-colors ${
                     !returnItem.isSellable
-                      ? 'bg-rose-600 text-white border-rose-600'
-                      : 'bg-slate-50 text-slate-700 border-slate-200'
+                      ? 'bg-truffle text-truffle-ink border-truffle'
+                      : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
                   }`}
                 >
                   تالف / هالك (خسارة مخزنية)
@@ -512,11 +508,11 @@ export default function SalesHistoryPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">طريقة رد المبلغ</label>
+              <label className="text-xs font-bold text-ink block mb-1">طريقة رد المبلغ</label>
               <select
                 value={returnItem.refundMethod}
                 onChange={(e: any) => setReturnItem({ ...returnItem, refundMethod: e.target.value })}
-                className="w-full h-10 px-3 text-xs border rounded-xl"
+                className="w-full h-10 px-3 text-xs border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
               >
                 <option value="cash">نقدًا من الدرج (كاش)</option>
                 <option value="wallet">محفظة إلكترونية</option>
@@ -526,18 +522,18 @@ export default function SalesHistoryPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">سبب الإرجاع</label>
+              <label className="text-xs font-bold text-ink block mb-1">سبب الإرجاع</label>
               <input
                 type="text"
                 value={returnItem.reason}
                 onChange={(e) => setReturnItem({ ...returnItem, reason: e.target.value })}
-                className="w-full h-10 px-3 text-xs border rounded-xl"
+                className="w-full h-10 px-3 text-xs border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
               />
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-xl flex justify-between text-xs font-bold">
+            <div className="bg-surface-alt border border-line p-3 rounded-xl flex justify-between text-xs font-bold text-ink-strong">
               <span>إجمالي المبلغ المسترد:</span>
-              <span className="text-rose-600">
+              <span className="text-danger-text">
                 {formatCurrency(Math.max(0, parsedReturnQty * returnItem.unitPrice))}
               </span>
             </div>
@@ -557,7 +553,6 @@ export default function SalesHistoryPage() {
         </Dialog>
       )}
 
-      {/* نافذة الطباعة */}
       {printInvoice && (
         <InvoicePrintView
           invoice={printInvoice}

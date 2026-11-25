@@ -7,14 +7,9 @@ import {
   ShoppingCart,
   Search,
   Camera,
-  Plus,
-  Minus,
-  Trash2,
   CheckCircle2,
   AlertTriangle,
   User,
-  CreditCard,
-  Percent,
   UserPlus,
   Lock,
   RotateCcw,
@@ -23,12 +18,12 @@ import { useShop, Product } from '@/lib/store/shop-store';
 import { Button, SaveButtonState } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
 import { PosSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/motion/toast-provider';
 import { LIST_ITEM_TRANSITION } from '@/lib/motion';
-import { formatCurrency, formatPercent, formatArabicDateTime } from '@/lib/formatters';
+import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 const BarcodeScannerModal = dynamic(
   () => import('@/components/barcode-scanner-modal').then((mod) => mod.BarcodeScannerModal),
@@ -71,7 +66,6 @@ export default function NewSalePage() {
   const [invoiceWarning, setInvoiceWarning] = useState<string | null>(null);
   const [completedInvoice, setCompletedInvoice] = useState<any | null>(null);
 
-  // حالة إضافة عميل سريعاً
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [newCustName, setNewCustName] = useState('');
   const [newCustPhone, setNewCustPhone] = useState('');
@@ -85,7 +79,6 @@ export default function NewSalePage() {
     return <PosSkeleton />;
   }
 
-  // حالة إغلاق الدرج وحظره
   const isDrawerClosed = !activeDrawer || activeDrawer.status !== 'open';
   const lastClosedSession = drawerSessions.find((s) => s.status === 'closed') || drawerSessions[0];
 
@@ -123,7 +116,6 @@ export default function NewSalePage() {
     }, 450);
   };
 
-  // البحث والتصفية في المنتجات
   const filteredProducts = products.filter((p) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -134,7 +126,6 @@ export default function NewSalePage() {
     );
   });
 
-  // إضافة منتج للسلة (تحديث متفائل فوري)
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
@@ -158,7 +149,6 @@ export default function NewSalePage() {
     successToast(`أضيف "${product.name}" إلى السلة`);
   };
 
-  // تعديل كمية
   const updateQuantity = (productId: string, delta: number) => {
     setCart((prev) =>
       prev
@@ -173,7 +163,6 @@ export default function NewSalePage() {
     );
   };
 
-  // تعديل سعر البيع في الفاتورة مباشرة
   const updateUnitPrice = (productId: string, newPrice: number) => {
     setCart((prev) =>
       prev.map((item) =>
@@ -182,12 +171,10 @@ export default function NewSalePage() {
     );
   };
 
-  // حذف بند
   const removeFromCart = (productId: string) => {
     setCart((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
-  // معالجة قراءة الباركود من الكاميرا
   const handleBarcodeScan = (barcode: string) => {
     const found = products.find((p) => p.barcode === barcode);
     if (found) {
@@ -197,7 +184,6 @@ export default function NewSalePage() {
     }
   };
 
-  // الحسابات
   const subtotal = cart.reduce(
     (sum, item) => sum + (item.quantity * item.unitPrice - item.discount),
     0
@@ -210,7 +196,6 @@ export default function NewSalePage() {
     : totalAmount;
   const remainingDebt = Math.max(0, totalAmount - actualPaidAmount);
 
-  // إتمام وحفظ الفاتورة مع منع التكرار (Double-submit Guard)
   const handleCompleteSale = async () => {
     if (saleLockRef.current) return;
     if (isDrawerClosed) {
@@ -255,7 +240,6 @@ export default function NewSalePage() {
     }
 
     setCompletedInvoice(invoice);
-    // تصفير السلة
     setCart([]);
     setOverallDiscount(0);
     setIsPaidAmountManual(false);
@@ -269,13 +253,13 @@ export default function NewSalePage() {
   return (
     <div className="space-y-4">
       {/* رأس الشاشة */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6 text-brand-600" />
+          <h1 className="text-xl sm:text-2xl font-black text-ink-strong flex items-center gap-2">
+            <ShoppingCart strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
             <span>نقطة البيع - فاتورة جديدة (POS)</span>
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-muted">
             أهلًا يا كريم - اختر الصنف أو امسح الباركود بالكاميرا مباشرة
           </p>
         </div>
@@ -285,9 +269,9 @@ export default function NewSalePage() {
             variant="outline"
             size="md"
             onClick={() => setIsScannerOpen(true)}
-            className="border-brand-300 text-brand-700 bg-brand-50 hover:bg-brand-100"
+            className="border-flame bg-flame/15 text-ink-strong hover:bg-flame/30 font-bold"
           >
-            <Camera className="w-4 h-4" />
+            <Camera strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
             <span>مسح الباركود بالكاميرا</span>
           </Button>
         </div>
@@ -295,19 +279,19 @@ export default function NewSalePage() {
 
       {/* تنبيه غلق الدرج وحظر البيع */}
       {isDrawerClosed && (
-        <div className="p-4 sm:p-5 bg-rose-50 border-2 border-rose-300 rounded-2xl text-rose-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="p-4 sm:p-5 bg-danger-bg border-2 border-danger-border rounded-2xl text-ink-strong flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-card">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-200 text-rose-800 flex items-center justify-center shrink-0">
-              <Lock className="w-5 h-5 text-rose-700" />
+            <div className="w-10 h-10 rounded-xl bg-truffle text-truffle-ink flex items-center justify-center shrink-0">
+              <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-black text-rose-900">
+              <h3 className="text-sm sm:text-base font-black text-danger-text">
                 الدرج مقفل حالياً - تم إيقاف إنشاء فواتير البيع
               </h3>
-              <p className="text-xs text-rose-700 mt-0.5 leading-relaxed">
+              <p className="text-xs text-ink mt-0.5 leading-relaxed">
                 لا يمكن إنشاء أي فواتير جديدة أثناء إغلاق الدرج لمنع تسجيل حركات مالية بدون وردية نشطة.
                 {lastClosedSession?.closedAt && (
-                  <span className="block font-semibold mt-0.5 text-rose-800">
+                  <span className="block font-semibold mt-0.5 text-danger-text">
                     وقت إغلاق الدرج: {formatArabicDateTime(lastClosedSession.closedAt)}
                   </span>
                 )}
@@ -320,95 +304,93 @@ export default function NewSalePage() {
             variant="danger"
             size="md"
             onClick={() => reopenDrawerSession(lastClosedSession?.id)}
-            className="gap-2 shrink-0 bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md shadow-rose-600/30 w-full sm:w-auto"
+            className="gap-2 shrink-0 font-bold w-full sm:w-auto"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
             <span>إعادة فتح الدرج (صلاحية المالك كريم)</span>
           </Button>
         </div>
       )}
 
       {invoiceWarning && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-bold flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+        <div className="p-3 bg-warning-bg border border-warning-border rounded-xl text-xs text-warning font-bold flex items-center gap-2">
+          <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 shrink-0 text-warning" />
           <span>{invoiceWarning}</span>
         </div>
       )}
 
-      {/* تخطيط الشاشة: اليمين الأصناف، اليسار سلة الفاتورة والحسابات */}
+      {/* تخطيط الشاشة */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* عمود الكتالوج والأصناف (7 أعمدة) */}
+        {/* عمود الكتالوج والأصناف */}
         <div className="lg:col-span-7 space-y-4">
-          {/* مربع البحث السريع */}
           <div className="relative">
-            <Search className="w-5 h-5 text-slate-400 absolute right-3.5 top-3" />
+            <Search strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-ink-muted absolute right-3.5 top-3" />
             <input
               type="text"
               placeholder="ابحث بالاسم أو الباركود أو القسم..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pr-11 pl-4 rounded-xl border border-slate-300 bg-white text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              className="w-full h-11 pr-11 pl-4 rounded-xl border border-line bg-surface text-ink-strong placeholder:text-ink-muted text-sm focus:border-flame focus:outline-none focus:ring-2 focus:ring-flame/25"
             />
           </div>
 
-          {/* شبكة المنتجات ذات اللمس السريع */}
           {filteredProducts.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-xs text-slate-500 space-y-2">
-              <p className="font-bold text-slate-700">
+            <div className="p-8 rounded-2xl bg-surface border border-line text-center text-xs text-ink-muted space-y-2">
+              <p className="font-bold text-ink-strong">
                 {products.length === 0 ? 'لا توجد منتجات مسجلة في هذا المتجر حتى الآن' : 'لا توجد منتجات مطابقة للبحث'}
               </p>
               <p>أضف منتجات من صفحة المنتجات أو عبر فاتورة توريد من الموردين للبدء في البيع.</p>
             </div>
           ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto p-1">
-            {filteredProducts.map((p) => {
-              const isLow = p.currentStock <= p.minStockAlert;
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => addToCart(p)}
-                  className="bg-white p-3.5 rounded-2xl border border-slate-200 hover:border-brand-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between select-none active:scale-95"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <span className="text-[10px] font-semibold text-slate-400 truncate">
-                        {p.category}
-                      </span>
-                      {isLow && (
-                        <span className="text-[10px] bg-rose-50 text-rose-600 font-bold px-1.5 py-0.5 rounded-full">
-                          مخزون: {p.currentStock}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto p-1">
+              {filteredProducts.map((p) => {
+                const isLow = p.currentStock <= p.minStockAlert;
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => addToCart(p)}
+                    className="group bg-surface p-3.5 rounded-2xl border border-line hover:border-flame hover:shadow-card transition-all cursor-pointer flex flex-col justify-between select-none active:scale-95"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[10px] font-semibold text-ink-muted truncate">
+                          {p.category}
                         </span>
-                      )}
+                        {isLow && (
+                          <span className="text-[10px] bg-danger-bg text-danger-text border border-danger-border font-bold px-1.5 py-0.5 rounded-full">
+                            مخزون: {p.currentStock}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-bold text-ink-strong line-clamp-2 leading-tight">
+                        {p.name}
+                      </h4>
                     </div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 leading-tight">
-                      {p.name}
-                    </h4>
+                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-divider">
+                      <span className="text-xs sm:text-sm font-black text-truffle dark:text-flame">
+                        {formatCurrency(p.salePrice)}
+                      </span>
+                      <span className="w-7 h-7 rounded-lg bg-flame/25 text-abyssal dark:text-flame flex items-center justify-center font-bold text-base group-hover:bg-flame group-hover:text-abyssal transition-colors">
+                        +
+                      </span>
+                    </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
-                    <span className="text-xs sm:text-sm font-black text-brand-600">
-                      {formatCurrency(p.salePrice)}
-                    </span>
-                    <span className="w-7 h-7 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-base hover:bg-brand-600 hover:text-white transition-colors">
-                      +
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        {/* عمود سلة الفاتورة والدفع (5 أعمدة) */}
+        {/* عمود سلة الفاتورة والدفع */}
         <div className="lg:col-span-5 space-y-4">
-          <Card className="border-brand-200 shadow-md">
-            <CardHeader className="bg-slate-50/70 py-3">
+          <Card className="border-line shadow-elevated">
+            <CardHeader className="bg-surface-alt py-3">
               <CardTitle className="text-sm font-bold flex items-center justify-between w-full">
                 <span>سلة الفاتورة ({cart.length} أصناف)</span>
                 {cart.length > 0 && (
                   <button
                     onClick={() => setCart([])}
-                    className="text-xs text-rose-600 hover:underline font-normal"
+                    className="text-xs text-danger-text hover:underline font-bold"
                   >
                     تفريغ السلة
                   </button>
@@ -420,8 +402,8 @@ export default function NewSalePage() {
               {/* اختيار العميل مع زر إضافة عميل سريعاً */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-slate-500" />
+                  <label className="text-xs font-bold text-ink flex items-center gap-1.5">
+                    <User strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 text-ink-muted" />
                     <span>العميل</span>
                   </label>
                   <button
@@ -430,16 +412,16 @@ export default function NewSalePage() {
                       setAddCustError('');
                       setIsAddCustomerOpen(true);
                     }}
-                    className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-brand-50 transition-colors"
+                    className="text-xs font-bold text-truffle dark:text-flame flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-flame/20 transition-colors"
                   >
-                    <UserPlus className="w-3.5 h-3.5" />
+                    <UserPlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
                     <span>+ إضافة عميل سريعاً</span>
                   </button>
                 </div>
                 <select
                   value={selectedCustomerId}
                   onChange={(e) => setSelectedCustomerId(e.target.value)}
-                  className="w-full h-10 px-3 text-xs sm:text-sm border border-slate-300 rounded-xl bg-white focus:outline-none focus:border-brand-500"
+                  className="w-full h-10 px-3 text-xs sm:text-sm border border-line rounded-xl bg-surface text-ink-strong focus:outline-none focus:border-flame"
                 >
                   <option value="">عميل نقدي (بدون تسجيل حساب)</option>
                   {customers.map((c) => (
@@ -451,9 +433,9 @@ export default function NewSalePage() {
               </div>
 
               {/* بنود الفاتورة */}
-              <div className="space-y-2 max-h-56 overflow-y-auto divide-y divide-slate-100">
+              <div className="space-y-2 max-h-56 overflow-y-auto divide-y divide-divider">
                 {cart.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400 text-xs">
+                  <div className="text-center py-8 text-ink-muted text-xs">
                     السلة فارغة. اضغط على أي صنف من القائمة لإضافته.
                   </div>
                 ) : (
@@ -468,7 +450,7 @@ export default function NewSalePage() {
                         className="pt-2 flex items-center justify-between gap-2"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-slate-900 truncate">
+                          <p className="text-xs font-bold text-ink-strong truncate">
                             {item.product.name}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -478,40 +460,39 @@ export default function NewSalePage() {
                               onChange={(e) =>
                                 updateUnitPrice(item.product.id, parseFloat(e.target.value) || 0)
                               }
-                              className="w-20 h-7 text-xs px-1.5 border border-slate-200 rounded text-center font-bold"
+                              className="w-20 h-7 text-xs px-1.5 border border-line bg-surface text-ink-strong rounded text-center font-bold focus:outline-none focus:border-flame"
                               title="تعديل سعر البيع لهذا البند"
                             />
-                            <span className="text-[11px] text-slate-400">ج.م/قطعة</span>
+                            <span className="text-[11px] text-ink-muted">ج.م/قطعة</span>
                           </div>
                         </div>
 
-                        {/* أزرار الكمية */}
-                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                        <div className="flex items-center gap-1 bg-surface-alt border border-line p-1 rounded-xl">
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.product.id, -1)}
-                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-slate-700 hover:bg-slate-200 font-bold active:scale-95 transition-transform"
+                            className="w-6 h-6 rounded-lg bg-surface flex items-center justify-center text-ink-strong hover:bg-oatmeal/60 font-bold active:scale-95 transition-transform"
                           >
                             -
                           </button>
-                          <span className="w-7 text-center font-bold text-xs">{item.quantity}</span>
+                          <span className="w-7 text-center font-bold text-xs text-ink-strong">{item.quantity}</span>
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.product.id, 1)}
-                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-slate-700 hover:bg-slate-200 font-bold active:scale-95 transition-transform"
+                            className="w-6 h-6 rounded-lg bg-surface flex items-center justify-center text-ink-strong hover:bg-oatmeal/60 font-bold active:scale-95 transition-transform"
                           >
                             +
                           </button>
                         </div>
 
                         <div className="text-left min-w-[70px]">
-                          <p className="text-xs font-black text-slate-900">
+                          <p className="text-xs font-black text-ink-strong">
                             {formatCurrency(item.quantity * item.unitPrice)}
                           </p>
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.product.id)}
-                            className="text-rose-500 hover:text-rose-700 text-[10px] mt-0.5"
+                            className="text-danger-text hover:underline text-[10px] mt-0.5 font-semibold"
                           >
                             حذف
                           </button>
@@ -523,8 +504,8 @@ export default function NewSalePage() {
               </div>
 
               {/* طرق الدفع المصرية */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="text-xs font-bold text-slate-700">طريقة السداد</label>
+              <div className="space-y-2 pt-2 border-t border-divider">
+                <label className="text-xs font-bold text-ink">طريقة السداد</label>
                 <div className="grid grid-cols-4 gap-1.5 text-center text-xs">
                   <button
                     type="button"
@@ -532,10 +513,10 @@ export default function NewSalePage() {
                       setPaymentMethod('cash');
                       setIsPaidAmountManual(false);
                     }}
-                    className={`py-2 rounded-xl font-bold border transition-all ${
+                    className={`py-2 rounded-xl font-bold border transition-colors ${
                       paymentMethod === 'cash'
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                        ? 'bg-success text-success-ink border-success'
+                        : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
                     }`}
                   >
                     كاش
@@ -546,10 +527,10 @@ export default function NewSalePage() {
                       setPaymentMethod('wallet');
                       setIsPaidAmountManual(false);
                     }}
-                    className={`py-2 rounded-xl font-bold border transition-all ${
+                    className={`py-2 rounded-xl font-bold border transition-colors ${
                       paymentMethod === 'wallet'
-                        ? 'bg-orange-600 text-white border-orange-600'
-                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                        ? 'bg-flame text-abyssal border-flame'
+                        : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
                     }`}
                   >
                     محفظة
@@ -560,10 +541,10 @@ export default function NewSalePage() {
                       setPaymentMethod('instapay');
                       setIsPaidAmountManual(false);
                     }}
-                    className={`py-2 rounded-xl font-bold border transition-all ${
+                    className={`py-2 rounded-xl font-bold border transition-colors ${
                       paymentMethod === 'instapay'
-                        ? 'bg-purple-600 text-white border-purple-600'
-                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                        ? 'bg-fantastic text-palladian border-fantastic'
+                        : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
                     }`}
                   >
                     إنستاباي
@@ -575,10 +556,10 @@ export default function NewSalePage() {
                       setIsPaidAmountManual(true);
                       setPaidAmountInput('0');
                     }}
-                    className={`py-2 rounded-xl font-bold border transition-all ${
+                    className={`py-2 rounded-xl font-bold border transition-colors ${
                       paymentMethod === 'credit'
-                        ? 'bg-amber-600 text-white border-amber-600'
-                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                        ? 'bg-truffle text-truffle-ink border-truffle'
+                        : 'bg-surface-alt text-ink border-line hover:bg-oatmeal/50'
                     }`}
                   >
                     آجل
@@ -587,19 +568,19 @@ export default function NewSalePage() {
               </div>
 
               {/* الخصم والمبلغ المدفوع */}
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-divider">
                 <div>
-                  <label className="text-[11px] font-bold text-slate-600">خصم إضافي (ج.م)</label>
+                  <label className="text-[11px] font-bold text-ink">خصم إضافي (ج.م)</label>
                   <input
                     type="number"
                     value={overallDiscount || ''}
                     placeholder="0"
                     onChange={(e) => setOverallDiscount(parseFloat(e.target.value) || 0)}
-                    className="w-full h-9 px-2 text-xs border rounded-lg"
+                    className="w-full h-9 px-2 text-xs border border-line bg-surface text-ink-strong rounded-lg focus:outline-none focus:border-flame"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-slate-600">المبلغ المدفوع (ج.م)</label>
+                  <label className="text-[11px] font-bold text-ink">المبلغ المدفوع (ج.م)</label>
                   <input
                     type="number"
                     value={isPaidAmountManual ? paidAmountInput : actualPaidAmount}
@@ -607,29 +588,29 @@ export default function NewSalePage() {
                       setIsPaidAmountManual(true);
                       setPaidAmountInput(e.target.value);
                     }}
-                    className="w-full h-9 px-2 text-xs border rounded-lg font-bold text-emerald-700"
+                    className="w-full h-9 px-2 text-xs border border-line bg-surface rounded-lg font-bold text-success focus:outline-none focus:border-flame"
                   />
                 </div>
               </div>
 
               {/* ملخص المبالغ والزر الكبير */}
-              <div className="bg-slate-50 p-3 rounded-xl space-y-1.5 text-xs">
-                <div className="flex justify-between text-slate-600">
+              <div className="bg-surface-alt border border-line p-3 rounded-xl space-y-1.5 text-xs">
+                <div className="flex justify-between text-ink-muted">
                   <span>المجموع:</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 {overallDiscount > 0 && (
-                  <div className="flex justify-between text-rose-600 font-bold">
+                  <div className="flex justify-between text-danger-text font-bold">
                     <span>الخصم:</span>
                     <span>-{formatCurrency(overallDiscount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm font-black text-slate-900 border-t pt-1">
+                <div className="flex justify-between text-sm font-black text-ink-strong border-t border-divider pt-1">
                   <span>الإجمالي المطلوب:</span>
-                  <span className="text-brand-700">{formatCurrency(totalAmount)}</span>
+                  <span className="text-truffle dark:text-flame">{formatCurrency(totalAmount)}</span>
                 </div>
                 {remainingDebt > 0 && (
-                  <div className="flex justify-between text-rose-600 font-bold border-t pt-1">
+                  <div className="flex justify-between text-danger-text font-bold border-t border-divider pt-1">
                     <span>دين يسجل على العميل:</span>
                     <span>{formatCurrency(remainingDebt)}</span>
                   </div>
@@ -643,20 +624,20 @@ export default function NewSalePage() {
                 saveState={saleSaveState}
                 savedText="تم حفظ الفاتورة"
                 onClick={handleCompleteSale}
-                className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
+                className={`w-full h-14 text-base font-bold transition-all ${
                   isDrawerClosed
-                    ? 'border-rose-300 bg-rose-50 text-rose-700 cursor-not-allowed shadow-none'
-                    : 'shadow-brand-500/25'
+                    ? 'border-danger-border bg-danger-bg text-danger-text cursor-not-allowed shadow-none'
+                    : 'shadow-accent'
                 }`}
               >
                 {isDrawerClosed ? (
                   <>
-                    <Lock className="w-5 h-5 ml-2 text-rose-600" />
+                    <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 ml-2 text-danger-text" />
                     <span>الدرج مقفل - يرجى إعادة فتح الوردية للبيع</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-5 h-5 ml-2" />
+                    <CheckCircle2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 ml-2" />
                     <span>إتمام وحفظ الفاتورة ({formatCurrency(totalAmount)})</span>
                   </>
                 )}
@@ -676,13 +657,13 @@ export default function NewSalePage() {
       >
         <form onSubmit={handleQuickAddCustomer} className="p-4 sm:p-5 space-y-4">
           {addCustError && (
-            <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold">
+            <div className="p-2.5 bg-danger-bg border border-danger-border rounded-xl text-xs text-danger-text font-bold">
               {addCustError}
             </div>
           )}
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">
-              اسم العميل <span className="text-rose-500">*</span>
+            <label className="text-xs font-bold text-ink block mb-1">
+              اسم العميل <span className="text-danger-text">*</span>
             </label>
             <Input
               type="text"
@@ -695,7 +676,7 @@ export default function NewSalePage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">
+            <label className="text-xs font-bold text-ink block mb-1">
               رقم الهاتف
             </label>
             <Input
@@ -707,7 +688,7 @@ export default function NewSalePage() {
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-divider">
             <Button
               type="button"
               variant="ghost"
@@ -723,14 +704,12 @@ export default function NewSalePage() {
         </form>
       </Dialog>
 
-      {/* نافذة كاميرا الباركود */}
       <BarcodeScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onScan={handleBarcodeScan}
       />
 
-      {/* نافذة طباعة الإيصال عند الانتهاء */}
       {completedInvoice && (
         <InvoicePrintView
           invoice={completedInvoice}

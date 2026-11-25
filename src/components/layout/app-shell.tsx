@@ -11,6 +11,7 @@ import { TopProgressBar } from '@/components/motion/top-progress-bar';
 import { RouteTransition } from '@/components/motion/route-transition';
 import { DashboardSkeleton } from '@/components/ui/skeleton';
 import { PREFETCH_ROUTES } from '@/lib/motion';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -52,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <TopProgressBar />
-        <main className="flex-1 min-h-screen flex items-center justify-center bg-slate-50 p-4 w-full">
+        <main className="flex-1 min-h-screen flex items-center justify-center bg-canvas p-4 w-full">
           <RouteTransition>{children}</RouteTransition>
         </main>
       </>
@@ -84,31 +85,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Header />
         <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
           {activeError && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+            <div className="mb-4 p-3.5 rounded-2xl bg-danger-bg border border-danger-border text-danger-text text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
               <div className="flex items-start gap-2.5">
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-danger shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-black text-rose-900">مشكلة في الاتصال أو الحفظ بقاعدة بيانات Supabase</p>
-                  <p className="text-rose-700 mt-0.5 break-words">{activeError}</p>
+                  <p className="font-black text-danger-text">مشكلة في الاتصال أو الحفظ بقاعدة بيانات Supabase</p>
+                  <p className="text-danger-text/90 mt-0.5 break-words">{activeError}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => void refreshFromCloud()}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition-colors active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-truffle text-truffle-ink font-bold hover:opacity-90 transition-opacity active:scale-95"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
                   <span>إعادة الفحص</span>
                 </button>
                 {syncError && (
                   <button
                     type="button"
                     onClick={clearSyncError}
-                    className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-100"
+                    className="p-1.5 rounded-lg text-danger-text hover:bg-danger/10"
                     title="إغلاق التنبيه"
                   >
-                    <X className="w-4 h-4" />
+                    <X strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
                   </button>
                 )}
               </div>

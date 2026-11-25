@@ -5,6 +5,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from './button';
 import { MODAL_BACKDROP_TRANSITION, MODAL_PANEL_TRANSITION } from '@/lib/motion';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 interface DialogProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ export function Dialog({
           exit={MODAL_BACKDROP_TRANSITION.exit}
           transition={MODAL_BACKDROP_TRANSITION.transition}
           onClick={onClose}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-abyssal/65 backdrop-blur-sm"
         >
           <m.div
             key="dialog-panel"
@@ -71,22 +72,22 @@ export function Dialog({
             transition={MODAL_PANEL_TRANSITION.transition}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              'w-full bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col',
+              'w-full bg-surface text-ink rounded-t-3xl sm:rounded-2xl shadow-elevated border border-line overflow-hidden max-h-[90vh] flex flex-col',
               maxW
             )}
           >
-            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="p-4 sm:p-5 border-b border-divider flex items-center justify-between bg-surface-alt/70">
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900">{title}</h3>
-                {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+                <h3 className="text-base sm:text-lg font-bold text-ink-strong">{title}</h3>
+                {description && <p className="text-xs text-ink-muted mt-0.5">{description}</p>}
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="إغلاق"
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors active:scale-95"
+                className="p-2 text-ink-muted hover:text-ink-strong rounded-full hover:bg-oatmeal/50 transition-colors active:scale-95"
               >
-                <X className="w-5 h-5" />
+                <X strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
               </button>
             </div>
             <div className="p-4 sm:p-6 overflow-y-auto">{children}</div>

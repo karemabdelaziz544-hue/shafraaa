@@ -7,11 +7,6 @@ import {
   Unlock,
   CheckCircle2,
   AlertTriangle,
-  ArrowDownLeft,
-  ArrowUpRight,
-  DollarSign,
-  Smartphone,
-  Info,
   RotateCcw,
 } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
@@ -21,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
 import { FormReportSkeleton } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function DrawerPage() {
   const {
@@ -98,14 +94,14 @@ export default function DrawerPage() {
   return (
     <div className="space-y-6">
       {/* رأس الصفحة */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Vault className="w-6 h-6 text-brand-600" />
+          <h1 className="text-xl sm:text-2xl font-black text-ink-strong flex items-center gap-2">
+            <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
             <span>تقفيل الدرج اليومي واليومية</span>
           </h1>
-          <p className="text-xs text-slate-500">
-            أهلًا يا كريم - الرصيد المتوقع = رصيد أول + الوارد النقدي - المنصرف النقدي. المحافظ وإنستاباي تتبع منفصلة.
+          <p className="text-xs text-ink-muted">
+            أهلًا يا {ownerName} - الرصيد المتوقع = رصيد أول + الوارد النقدي - المنصرف النقدي. المحافظ وإنستاباي تتبع منفصلة.
           </p>
         </div>
 
@@ -115,9 +111,9 @@ export default function DrawerPage() {
               variant="danger"
               size="lg"
               onClick={() => setIsCloseModalOpen(true)}
-              className="gap-2 font-bold shadow-md shadow-rose-500/20"
+              className="gap-2 font-bold"
             >
-              <Lock className="w-4 h-4" />
+              <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
               <span>تقفيل اليومية وإغلاق الدرج</span>
             </Button>
           ) : (
@@ -125,9 +121,9 @@ export default function DrawerPage() {
               variant="primary"
               size="lg"
               onClick={() => setIsOpenNewModalOpen(true)}
-              className="gap-2 font-bold shadow-md shadow-brand-500/20"
+              className="gap-2 font-bold shadow-accent"
             >
-              <Unlock className="w-4 h-4" />
+              <Unlock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
               <span>فتح وردية درج جديدة</span>
             </Button>
           )}
@@ -137,24 +133,24 @@ export default function DrawerPage() {
       {/* بطاقة تفاصيل الدرج المفتوح حاليًا */}
       {activeDrawer ? (
         <div className="space-y-5">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 sm:p-7 rounded-3xl shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/60 pb-5">
+          <div className="bg-gradient-to-br from-abyssal to-fantastic text-palladian p-6 sm:p-7 rounded-3xl shadow-elevated border border-oatmeal/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-oatmeal/25 pb-5">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-emerald-400 font-bold text-xs">جلسة الوردية نشطة ومفتوحة</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-flame animate-pulse" />
+                  <span className="text-flame font-bold text-xs">جلسة الوردية نشطة ومفتوحة</span>
                 </div>
-                <h2 className="text-lg sm:text-xl font-bold mt-1">
+                <h2 className="text-lg sm:text-xl font-bold mt-1 text-palladian">
                   جلسة رقم #{activeDrawer.sessionNumber}
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-oatmeal">
                   فُتحت في: {formatArabicDateTime(activeDrawer.openedAt)}
                 </p>
               </div>
 
               <div className="text-left">
-                <span className="text-xs text-slate-400 block">النقدية المتوقعة بالدرج حاليًا</span>
-                <span className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono">
+                <span className="text-xs text-oatmeal block">النقدية المتوقعة بالدرج حاليًا</span>
+                <span className="text-3xl sm:text-4xl font-black text-flame font-mono">
                   {formatCurrency(activeDrawer.expectedCash)}
                 </span>
               </div>
@@ -162,29 +158,26 @@ export default function DrawerPage() {
 
             {/* تفاصيل معادلة الدرج الصارمة */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 text-xs">
-              <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                <span className="text-slate-400 block mb-1">الرصيد الافتتاحي:</span>
-                <span className="text-base font-bold text-white font-mono">
+              <div className="bg-abyssal/50 p-3 rounded-2xl border border-oatmeal/20">
+                <span className="text-oatmeal block mb-1">الرصيد الافتتاحي:</span>
+                <span className="text-base font-bold text-palladian font-mono">
                   {formatCurrency(activeDrawer.openingCash)}
                 </span>
               </div>
 
-              <div className="bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
-                <span className="text-emerald-300 block mb-1">إجمالي الوارد كاش (+):</span>
-                <span className="text-base font-bold text-emerald-400 font-mono">
-                  +{formatCurrency(
-                    activeDrawer.cashSales +
-                      activeDrawer.cashDebtPayments
-                  )}
+              <div className="bg-success-bg/20 p-3 rounded-2xl border border-success-border/40">
+                <span className="text-palladian/90 block mb-1">إجمالي الوارد كاش (+):</span>
+                <span className="text-base font-bold text-flame font-mono">
+                  +{formatCurrency(activeDrawer.cashSales + activeDrawer.cashDebtPayments)}
                 </span>
-                <span className="text-[10px] text-emerald-300/70 block mt-0.5">
+                <span className="text-[10px] text-oatmeal block mt-0.5">
                   (مبيعات + سداد ديون)
                 </span>
               </div>
 
-              <div className="bg-rose-500/10 p-3 rounded-2xl border border-rose-500/20">
-                <span className="text-rose-300 block mb-1">إجمالي المنصرف كاش (-):</span>
-                <span className="text-base font-bold text-rose-400 font-mono">
+              <div className="bg-truffle/30 p-3 rounded-2xl border border-truffle/60">
+                <span className="text-palladian/90 block mb-1">إجمالي المنصرف كاش (-):</span>
+                <span className="text-base font-bold text-palladian font-mono">
                   -{formatCurrency(
                     activeDrawer.cashExpenses +
                       activeDrawer.cashSupplierPayments +
@@ -192,17 +185,17 @@ export default function DrawerPage() {
                       activeDrawer.cashWithdrawals
                   )}
                 </span>
-                <span className="text-[10px] text-rose-300/70 block mt-0.5">
+                <span className="text-[10px] text-oatmeal block mt-0.5">
                   (مصروفات + موردين + مرتجع + مسحوبات)
                 </span>
               </div>
 
-              <div className="bg-purple-500/10 p-3 rounded-2xl border border-purple-500/20">
-                <span className="text-purple-300 block mb-1">المحافظ وإنستاباي:</span>
-                <span className="text-base font-bold text-purple-300 font-mono">
+              <div className="bg-abyssal/45 p-3 rounded-2xl border border-flame/35">
+                <span className="text-oatmeal block mb-1">المحافظ وإنستاباي:</span>
+                <span className="text-base font-bold text-flame font-mono">
                   {formatCurrency(activeDrawer.walletTotal + activeDrawer.instapayTotal)}
                 </span>
-                <span className="text-[10px] text-purple-300/70 block mt-0.5">
+                <span className="text-[10px] text-oatmeal block mt-0.5">
                   (محافظ: {activeDrawer.walletTotal} | إنستاباي: {activeDrawer.instapayTotal})
                 </span>
               </div>
@@ -210,14 +203,14 @@ export default function DrawerPage() {
           </div>
         </div>
       ) : (
-        <Card className="p-8 text-center bg-amber-50/50 border-amber-200">
-          <Lock className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-          <h3 className="text-base font-bold text-slate-900">الدرج مقفل حاليًا</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
+        <Card className="p-8 text-center bg-warning-bg/60 border-warning-border">
+          <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-10 h-10 text-warning mx-auto mb-2" />
+          <h3 className="text-base font-bold text-ink-strong">الدرج مقفل حاليًا</h3>
+          <p className="text-xs text-ink-muted max-w-md mx-auto mt-1 mb-4">
             لا توجد جلسة درج مفتوحة حاليًا. افتح جلسة جديدة لبدء عمليات البيع واستلام النقدية اليومية.
           </p>
           <Button variant="primary" size="md" onClick={() => setIsOpenNewModalOpen(true)}>
-            <Unlock className="w-4 h-4 ml-1" />
+            <Unlock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
             <span>فتح وردية درج جديدة</span>
           </Button>
         </Card>
@@ -230,12 +223,12 @@ export default function DrawerPage() {
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           {drawerSessions.length === 0 ? (
-            <div className="p-10 text-center text-slate-400 text-xs">
+            <div className="p-10 text-center text-ink-muted text-xs">
               لا توجد جلسات سابقة مسجلة.
             </div>
           ) : (
             <table className="w-full text-right text-xs sm:text-sm">
-              <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <thead className="bg-surface-alt text-ink font-bold border-b border-line">
                 <tr>
                   <th className="p-3 sm:p-4">الجلسة</th>
                   <th className="p-3 sm:p-4">وقت الفتح والإغلاق</th>
@@ -246,24 +239,24 @@ export default function DrawerPage() {
                   <th className="p-3 sm:p-4 text-center">إجراء المالك</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-divider">
                 {drawerSessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3 sm:p-4 font-mono font-bold text-slate-900">
+                  <tr key={session.id} className="hover:bg-surface-alt/60 transition-colors">
+                    <td className="p-3 sm:p-4 font-mono font-bold text-ink-strong">
                       جلسة #{session.sessionNumber}
                     </td>
-                    <td className="p-3 sm:p-4 text-slate-500">
+                    <td className="p-3 sm:p-4 text-ink-muted">
                       <p>{formatArabicDateTime(session.openedAt)}</p>
                       {session.closedAt && (
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-ink-muted">
                           أغلقت: {formatArabicDateTime(session.closedAt)}
                         </p>
                       )}
                     </td>
-                    <td className="p-3 sm:p-4 font-mono font-bold text-slate-900">
+                    <td className="p-3 sm:p-4 font-mono font-bold text-ink-strong">
                       {formatCurrency(session.expectedCash)}
                     </td>
-                    <td className="p-3 sm:p-4 font-mono font-black text-brand-700">
+                    <td className="p-3 sm:p-4 font-mono font-black text-truffle dark:text-flame">
                       {session.actualCash !== null && session.actualCash !== undefined
                         ? formatCurrency(session.actualCash)
                         : '-'}
@@ -271,11 +264,11 @@ export default function DrawerPage() {
                     <td className="p-3 sm:p-4 font-mono font-black">
                       {session.difference !== null && session.difference !== undefined ? (
                         session.difference === 0 ? (
-                          <span className="text-emerald-600">مطابق تمامًا (0.00)</span>
+                          <span className="text-success">مطابق تمامًا (0.00)</span>
                         ) : session.difference < 0 ? (
-                          <span className="text-rose-600">عجز: {formatCurrency(session.difference)}</span>
+                          <span className="text-danger-text">عجز: {formatCurrency(session.difference)}</span>
                         ) : (
-                          <span className="text-blue-600">زيادة: +{formatCurrency(session.difference)}</span>
+                          <span className="text-ink-strong">زيادة: +{formatCurrency(session.difference)}</span>
                         )
                       ) : (
                         '-'
@@ -298,9 +291,9 @@ export default function DrawerPage() {
                               reopenDrawerSession(session.id);
                             }
                           }}
-                          className="text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
+                          className="text-xs text-warning border-warning-border hover:bg-warning-bg"
                         >
-                          <RotateCcw className="w-3.5 h-3.5 ml-1" />
+                          <RotateCcw strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 ml-1" />
                           <span>إعادة فتح</span>
                         </Button>
                       )}
@@ -323,29 +316,29 @@ export default function DrawerPage() {
         >
           <form onSubmit={handleCloseDrawer} className="space-y-4">
             {drawerError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
+              <div className="p-3 rounded-xl bg-danger-bg border border-danger-border text-danger-text text-xs font-bold">
                 {drawerError}
               </div>
             )}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs space-y-1.5">
+            <div className="bg-surface-alt p-3.5 rounded-2xl border border-line text-xs space-y-1.5">
               <div className="flex justify-between">
-                <span className="text-slate-500">الرصيد المحسوب بالدفاتر (المتوقع):</span>
-                <span className="font-black text-slate-900 text-sm">
+                <span className="text-ink-muted">الرصيد المحسوب بالدفاتر (المتوقع):</span>
+                <span className="font-black text-ink-strong text-sm">
                   {formatCurrency(activeDrawer.expectedCash)}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-500">
+              <div className="flex justify-between text-ink-muted">
                 <span>المحافظ الإلكترونية (منفصلة):</span>
                 <span>{formatCurrency(activeDrawer.walletTotal)}</span>
               </div>
-              <div className="flex justify-between text-slate-500">
+              <div className="flex justify-between text-ink-muted">
                 <span>إنستاباي (منفصل):</span>
                 <span>{formatCurrency(activeDrawer.instapayTotal)}</span>
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
+              <label className="text-xs font-bold text-ink block mb-1">
                 النقدية الفعلية الموجودة في الدرج بعد العد (ج.م) *
               </label>
               <input
@@ -356,7 +349,7 @@ export default function DrawerPage() {
                 value={actualCashInput}
                 onChange={(e) => setActualCashInput(e.target.value)}
                 placeholder="0.00"
-                className="w-full h-12 px-3 text-lg border rounded-xl font-black text-center text-slate-900 focus:border-brand-500"
+                className="w-full h-12 px-3 text-lg border border-line bg-surface rounded-xl font-black text-center text-ink-strong focus:outline-none focus:border-flame focus:ring-2 focus:ring-flame/25"
               />
             </div>
 
@@ -365,36 +358,44 @@ export default function DrawerPage() {
               <div
                 className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between ${
                   liveDifference === 0
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    ? 'bg-success-bg text-success border-success-border'
                     : liveDifference < 0
-                    ? 'bg-rose-50 text-rose-800 border-rose-200'
-                    : 'bg-blue-50 text-blue-800 border-blue-200'
+                    ? 'bg-danger-bg text-danger-text border-danger-border'
+                    : 'bg-info-bg text-ink-strong border-info-border'
                 }`}
               >
                 <span>نتيجة المطابقة:</span>
-                <span className="font-black text-sm">
-                  {liveDifference === 0
-                    ? 'مطابق تمامًا بدون أي عجز أو زيادة 🎉'
-                    : liveDifference < 0
-                    ? `عجز في النقدية: ${formatCurrency(liveDifference)} ⚠️`
-                    : `زيادة في النقدية: +${formatCurrency(liveDifference)}`}
+                <span className="font-black text-sm inline-flex items-center gap-1.5">
+                  {liveDifference === 0 ? (
+                    <>
+                      <CheckCircle2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 shrink-0" />
+                      <span>مطابق تمامًا بدون أي عجز أو زيادة</span>
+                    </>
+                  ) : liveDifference < 0 ? (
+                    <>
+                      <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 shrink-0" />
+                      <span>عجز في النقدية: {formatCurrency(liveDifference)}</span>
+                    </>
+                  ) : (
+                    <span>زيادة في النقدية: +{formatCurrency(liveDifference)}</span>
+                  )}
                 </span>
               </div>
             )}
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">ملاحظات التقفيل</label>
+              <label className="text-xs font-bold text-ink block mb-1">ملاحظات التقفيل</label>
               <input
                 type="text"
                 value={closingNotes}
                 onChange={(e) => setClosingNotes(e.target.value)}
                 placeholder="ملاحظات حول سبب العجز أو الزيادة إن وجدت"
-                className="w-full h-10 px-3 text-xs border rounded-xl"
+                className="w-full h-10 px-3 text-xs border border-line bg-surface text-ink-strong placeholder:text-ink-muted rounded-xl focus:outline-none focus:border-flame"
               />
             </div>
 
             <Button type="submit" size="xl" variant="danger" saveState={drawerSaveState} savedText="تم الإغلاق" className="w-full font-bold">
-              <Lock className="w-5 h-5 ml-2" />
+              <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 ml-2" />
               <span>تأكيد الإغلاق وقفل الدرج</span>
             </Button>
           </form>
@@ -411,12 +412,12 @@ export default function DrawerPage() {
         >
           <form onSubmit={handleOpenNewDrawer} className="space-y-4">
             {drawerError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
+              <div className="p-3 rounded-xl bg-danger-bg border border-danger-border text-danger-text text-xs font-bold">
                 {drawerError}
               </div>
             )}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
+              <label className="text-xs font-bold text-ink block mb-1">
                 رصيد الدرج الافتتاحي (الفكة / النقدية المودعة في الدرج) *
               </label>
               <input
@@ -427,7 +428,7 @@ export default function DrawerPage() {
                 value={openingCashInput}
                 onChange={(e) => setOpeningCashInput(e.target.value)}
                 placeholder="500"
-                className="w-full h-11 px-3 text-base border rounded-xl font-bold text-center"
+                className="w-full h-11 px-3 text-base border border-line bg-surface text-ink-strong rounded-xl font-bold text-center focus:outline-none focus:border-flame"
               />
             </div>
 

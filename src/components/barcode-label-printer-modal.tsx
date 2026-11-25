@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { generateBarcodeSvg } from '@/lib/barcode-generator';
 import { formatCurrency } from '@/lib/formatters';
+import { ICON_TOKENS, PALETTE } from '@/lib/design-tokens';
 
 interface BarcodeLabelPrinterModalProps {
   isOpen: boolean;
@@ -84,13 +85,13 @@ export function BarcodeLabelPrinterModal({
     >
       <div className="space-y-5">
         {/* شريط التحكم السريع */}
-        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs no-print">
+        <div className="bg-surface-alt p-4 rounded-2xl border border-line grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs no-print">
           <div>
-            <label className="font-bold text-slate-700 block mb-1">مقاس ورق الملصقات:</label>
+            <label className="font-bold text-ink block mb-1">مقاس ورق الملصقات:</label>
             <select
               value={labelSize}
               onChange={(e: any) => setLabelSize(e.target.value)}
-              className="w-full h-9 px-2 rounded-lg border border-slate-300 bg-white font-bold"
+              className="w-full h-9 px-2 rounded-lg border border-line bg-surface text-ink-strong font-bold focus:outline-none focus:border-flame"
             >
               <option value="38x25">ملصق حراري صغير (38 مم × 25 مم)</option>
               <option value="50x30">ملصق حراري قياسي (50 مم × 30 مم)</option>
@@ -99,23 +100,23 @@ export function BarcodeLabelPrinterModal({
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">البيانات الظاهرة بالملصق:</label>
+            <label className="font-bold text-ink block mb-1">البيانات الظاهرة بالملصق:</label>
             <div className="flex items-center gap-3 mt-1.5">
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-1.5 cursor-pointer text-ink">
                 <input
                   type="checkbox"
                   checked={showPrice}
                   onChange={(e) => setShowPrice(e.target.checked)}
-                  className="rounded text-brand-600 focus:ring-brand-500"
+                  className="rounded accent-truffle focus:ring-flame"
                 />
                 <span>سعر البيع</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-1.5 cursor-pointer text-ink">
                 <input
                   type="checkbox"
                   checked={showShopName}
                   onChange={(e) => setShowShopName(e.target.checked)}
-                  className="rounded text-brand-600 focus:ring-brand-500"
+                  className="rounded accent-truffle focus:ring-flame"
                 />
                 <span>اسم المحل</span>
               </label>
@@ -123,14 +124,14 @@ export function BarcodeLabelPrinterModal({
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">تحديد نسخ الكل:</label>
+            <label className="font-bold text-ink block mb-1">تحديد نسخ الكل:</label>
             <div className="flex items-center gap-1.5">
               {[1, 2, 5, 10].map((n) => (
                 <button
                   key={n}
                   type="button"
                   onClick={() => setAllCopies(n)}
-                  className="px-2.5 py-1 rounded bg-white border hover:bg-slate-100 font-mono font-bold"
+                  className="px-2.5 py-1 rounded-lg bg-surface border border-line text-ink-strong hover:bg-flame hover:text-abyssal hover:border-flame font-mono font-bold transition-colors"
                 >
                   {n}
                 </button>
@@ -140,9 +141,9 @@ export function BarcodeLabelPrinterModal({
         </div>
 
         {/* قائمة المنتجات وعدد النسخ لكل منها */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden max-h-44 overflow-y-auto no-print">
+        <div className="border border-line rounded-xl overflow-hidden max-h-44 overflow-y-auto no-print">
           <table className="w-full text-right text-xs">
-            <thead className="bg-slate-100 text-slate-700 font-bold border-b sticky top-0">
+            <thead className="bg-surface-alt text-ink font-bold border-b border-line sticky top-0">
               <tr>
                 <th className="p-2.5">اسم المنتج</th>
                 <th className="p-2.5 text-center">الباركود</th>
@@ -150,26 +151,26 @@ export function BarcodeLabelPrinterModal({
                 <th className="p-2.5 text-center">عدد الملصقات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-divider bg-surface">
               {products.map((p) => (
                 <tr key={p.id}>
-                  <td className="p-2.5 font-bold text-slate-900 truncate max-w-[200px]">{p.name}</td>
-                  <td className="p-2.5 text-center font-mono text-slate-600">{p.barcode || 'غير محدد'}</td>
-                  <td className="p-2.5 text-center font-bold text-brand-700">{formatCurrency(p.salePrice)}</td>
+                  <td className="p-2.5 font-bold text-ink-strong truncate max-w-[200px]">{p.name}</td>
+                  <td className="p-2.5 text-center font-mono text-ink-muted">{p.barcode || 'غير محدد'}</td>
+                  <td className="p-2.5 text-center font-bold text-truffle dark:text-flame">{formatCurrency(p.salePrice)}</td>
                   <td className="p-2.5 text-center">
-                    <div className="inline-flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+                    <div className="inline-flex items-center gap-1 bg-surface-alt border border-line p-0.5 rounded-lg">
                       <button
                         type="button"
                         onClick={() => updateCopies(p.id, -1)}
-                        className="w-5 h-5 bg-white rounded flex items-center justify-center font-bold text-slate-700 hover:bg-slate-200"
+                        className="w-5 h-5 bg-surface rounded flex items-center justify-center font-bold text-ink-strong hover:bg-oatmeal/50"
                       >
                         -
                       </button>
-                      <span className="w-7 text-center font-bold font-mono">{copies[p.id] || 1}</span>
+                      <span className="w-7 text-center font-bold font-mono text-ink-strong">{copies[p.id] || 1}</span>
                       <button
                         type="button"
                         onClick={() => updateCopies(p.id, 1)}
-                        className="w-5 h-5 bg-white rounded flex items-center justify-center font-bold text-slate-700 hover:bg-slate-200"
+                        className="w-5 h-5 bg-surface rounded flex items-center justify-center font-bold text-ink-strong hover:bg-oatmeal/50"
                       >
                         +
                       </button>
@@ -184,17 +185,17 @@ export function BarcodeLabelPrinterModal({
         {/* معاينة الملصقات قبل الطباعة */}
         <div>
           <div className="flex items-center justify-between mb-2 no-print">
-            <h4 className="text-xs font-bold text-slate-700">
+            <h4 className="text-xs font-bold text-ink">
               معاينة ملصقات الباركود ({labelItems.length} ملصق):
             </h4>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-ink-muted">
               جاهز للطباعة المباشرة على الطابعات الحرارية أو ورق A4
             </span>
           </div>
 
           <div
             id="printable-barcode-labels"
-            className="p-4 bg-slate-100 rounded-2xl border border-slate-300 max-h-72 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"
+            className="p-4 bg-oatmeal/35 rounded-2xl border border-line max-h-72 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"
           >
             {labelItems.map((prod, idx) => {
               const barcode = prod.barcode || '622100000000';
@@ -203,27 +204,28 @@ export function BarcodeLabelPrinterModal({
                 barWidth: 1.35,
                 showText: true,
                 fontSize: 10,
+                color: PALETTE.abyssal,
               });
 
               return (
                 <div
                   key={`${prod.id}-${idx}`}
-                  className="sticker-item bg-white p-2 rounded-lg border border-slate-300 shadow-sm flex flex-col items-center justify-between text-center select-none aspect-[1.5/1]"
+                  className="sticker-item bg-palladian p-2 rounded-lg border border-line shadow-card flex flex-col items-center justify-between text-center select-none aspect-[1.5/1]"
                 >
                   {showShopName && (
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block truncate w-full">
+                    <span className="text-[9px] font-black text-fantastic uppercase tracking-wider block truncate w-full">
                       {shopName}
                     </span>
                   )}
-                  <p className="text-[10px] font-bold text-slate-900 leading-tight line-clamp-1 w-full mt-0.5">
+                  <p className="text-[10px] font-bold text-abyssal leading-tight line-clamp-1 w-full mt-0.5">
                     {prod.name}
                   </p>
                   <div
-                    className="w-full my-0.5 flex justify-center max-h-12"
+                    className="w-full my-0.5 flex justify-center max-h-12 text-abyssal"
                     dangerouslySetInnerHTML={{ __html: svgString }}
                   />
                   {showPrice && (
-                    <span className="text-[11px] font-black text-slate-900 font-mono">
+                    <span className="text-[11px] font-black text-abyssal font-mono">
                       {formatCurrency(prod.salePrice)}
                     </span>
                   )}
@@ -234,7 +236,7 @@ export function BarcodeLabelPrinterModal({
         </div>
 
         {/* أزرار الإجراء */}
-        <div className="flex items-center justify-between pt-3 border-t no-print">
+        <div className="flex items-center justify-between pt-3 border-t border-divider no-print">
           <Button type="button" variant="ghost" size="md" onClick={onClose}>
             إلغاء
           </Button>
@@ -244,9 +246,9 @@ export function BarcodeLabelPrinterModal({
             variant="primary"
             size="lg"
             onClick={handlePrint}
-            className="gap-2 font-bold shadow-md shadow-brand-500/20"
+            className="gap-2 font-bold shadow-accent"
           >
-            <Printer className="w-5 h-5" />
+            <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
             <span>طباعة الملصقات ({labelItems.length} ملصق)</span>
           </Button>
         </div>
@@ -269,7 +271,7 @@ export function BarcodeLabelPrinterModal({
             width: 100% !important;
             max-height: none !important;
             overflow: visible !important;
-            background: white !important;
+            background: #ffffff !important;
             border: none !important;
             padding: 2mm !important;
             margin: 0 !important;
@@ -280,7 +282,9 @@ export function BarcodeLabelPrinterModal({
           #printable-barcode-labels > .sticker-item {
             page-break-inside: avoid;
             break-inside: avoid;
-            border: 1px dashed #cbd5e1 !important;
+            background: #ffffff !important;
+            color: ${PALETTE.abyssal} !important;
+            border: 1px dashed ${PALETTE.oatmeal} !important;
             width: ${labelDims.w} !important;
             height: ${labelDims.h} !important;
             padding: 1.5mm !important;

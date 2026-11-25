@@ -68,7 +68,7 @@ export function TopProgressBar() {
           ease: MOTION_EASINGS.standard,
         }}
         style={{ transformOrigin: 'right center' }}
-        className="h-full w-full bg-gradient-to-l from-brand-500 via-brand-400 to-sky-400 shadow-sm shadow-brand-500/40"
+        className="h-full w-full bg-gradient-to-l from-flame via-flame to-truffle shadow-accent"
       />
     </div>
   );

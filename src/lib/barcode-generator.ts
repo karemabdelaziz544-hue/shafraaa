@@ -82,6 +82,7 @@ export function generateBarcodeSvg(
     barWidth?: number;
     showText?: boolean;
     fontSize?: number;
+    color?: string;
   } = {}
 ): string {
   const { height = 50, barWidth = 1.8, showText = true, fontSize = 11 } = options;
@@ -96,6 +97,10 @@ export function generateBarcodeSvg(
   let inBar = false;
   let barStart = 0;
 
+  const barColor = options?.color ?? 'currentColor';
+  const rectsStart = '';
+  void rectsStart;
+
   for (let i = 0; i < binary.length; i++) {
     if (binary[i] === '1') {
       if (!inBar) {
@@ -106,7 +111,7 @@ export function generateBarcodeSvg(
       if (inBar) {
         const w = (i - barStart) * barWidth;
         const x = quietZone + barStart * barWidth;
-        rects += `<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${height}" fill="#000000" />`;
+        rects += `<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${height}" fill="${barColor}" />`;
         inBar = false;
       }
     }
@@ -114,12 +119,12 @@ export function generateBarcodeSvg(
   if (inBar) {
     const w = (binary.length - barStart) * barWidth;
     const x = quietZone + barStart * barWidth;
-    rects += `<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${height}" fill="#000000" />`;
+    rects += `<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${height}" fill="${barColor}" />`;
   }
 
   let textSvg = '';
   if (showText) {
-    textSvg = `<text x="${(totalWidth / 2).toFixed(1)}" y="${(height + fontSize + 2).toFixed(1)}" text-anchor="middle" font-family="monospace" font-size="${fontSize}px" font-weight="bold" fill="#000000" letter-spacing="2px">${code}</text>`;
+    textSvg = `<text x="${(totalWidth / 2).toFixed(1)}" y="${(height + fontSize + 2).toFixed(1)}" text-anchor="middle" font-family="monospace" font-size="${fontSize}px" font-weight="bold" fill="${barColor}" letter-spacing="2px">${code}</text>`;
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth.toFixed(1)} ${totalHeight.toFixed(1)}" width="100%" height="100%">${rects}${textSvg}</svg>`;

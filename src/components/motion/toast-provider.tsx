@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 import { MOTION_DURATIONS, MOTION_EASINGS, MOTION_DISTANCES } from '@/lib/motion';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -68,29 +69,29 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 ease: MOTION_EASINGS.standard,
               }}
               role="status"
-              className={`pointer-events-auto p-3.5 rounded-2xl shadow-xl border flex items-start gap-2.5 text-xs font-bold backdrop-blur-md ${
+              className={`pointer-events-auto p-3.5 rounded-2xl shadow-elevated border flex items-start gap-2.5 text-xs font-bold backdrop-blur-md ${
                 toast.type === 'success'
-                  ? 'bg-emerald-950/95 border-emerald-700 text-emerald-50'
+                  ? 'bg-abyssal/95 border-success-border text-palladian'
                   : toast.type === 'error'
-                  ? 'bg-rose-950/95 border-rose-700 text-rose-50'
-                  : 'bg-slate-900/95 border-slate-700 text-slate-50'
+                  ? 'bg-truffle border-palladian/30 text-palladian'
+                  : 'bg-fantastic/95 border-flame/60 text-palladian'
               }`}
             >
               {toast.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-flame shrink-0 mt-0.5" />
               ) : toast.type === 'error' ? (
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <AlertCircle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-palladian shrink-0 mt-0.5" />
               ) : (
-                <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <Info strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-flame shrink-0 mt-0.5" />
               )}
               <span className="flex-1 leading-relaxed">{toast.message}</span>
               <button
                 type="button"
                 onClick={() => dismiss(toast.id)}
-                className="p-0.5 rounded-md opacity-70 hover:opacity-100 transition-opacity"
+                className="p-0.5 rounded-md opacity-75 hover:opacity-100 transition-opacity"
                 aria-label="إغلاق الإشعار"
               >
-                <X className="w-3.5 h-3.5" />
+                <X strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
               </button>
             </m.div>
           ))}

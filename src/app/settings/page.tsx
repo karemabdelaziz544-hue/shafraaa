@@ -11,11 +11,15 @@ import {
   Key,
   AlertTriangle,
   RefreshCw,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
+import { useTheme } from '@/components/layout/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function SettingsPage() {
   const {
@@ -31,11 +35,11 @@ export default function SettingsPage() {
     restoreDatabaseJSON,
     resetToSampleData,
   } = useShop();
+  const { theme, setTheme } = useTheme();
 
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
   const [isCheckingCloud, setIsCheckingCloud] = useState(false);
 
-  // تحميل النسخة الاحتياطية الكاملة بصيغة JSON
   const handleDownloadBackup = () => {
     const jsonStr = exportDatabaseJSON();
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -47,7 +51,6 @@ export default function SettingsPage() {
     URL.revokeObjectURL(url);
   };
 
-  // استعادة نسخة احتياطية من ملف JSON
   const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -73,19 +76,19 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="pb-2 border-b border-slate-200">
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-          <Settings className="w-6 h-6 text-brand-600" />
+      <div className="pb-2 border-b border-line">
+        <h1 className="text-xl sm:text-2xl font-black text-ink-strong flex items-center gap-2">
+          <Settings strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
           <span>إعدادات المحل والنسخ الاحتياطي</span>
         </h1>
-        <p className="text-xs text-slate-500">
-          أهلًا يا {ownerName} - إدارة بيانات المنشأة، حفظ نسخ الأمان الاحتياطية، وحالة الاتصال الفعلية
+        <p className="text-xs text-ink-muted">
+          أهلًا يا {ownerName} - إدارة بيانات المنشأة، مظهر النظام، حفظ نسخ الأمان الاحتياطية، وحالة الاتصال الفعلية
         </p>
       </div>
 
       {restoreStatus && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+        <div className="p-4 bg-success-bg border border-success-border rounded-2xl text-success text-sm font-bold flex items-center gap-2">
+          <CheckCircle2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-success" />
           <span>{restoreStatus}</span>
         </div>
       )}
@@ -98,22 +101,22 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <span className="text-slate-500 block mb-1">اسم المحل:</span>
-              <p className="font-bold text-base text-slate-900">{shopName}</p>
+              <span className="text-ink-muted block mb-1">اسم المحل:</span>
+              <p className="font-bold text-base text-ink-strong">{shopName}</p>
             </div>
             <div>
-              <span className="text-slate-500 block mb-1">المستخدم المسؤول:</span>
-              <p className="font-bold text-base text-slate-900">
+              <span className="text-ink-muted block mb-1">المستخدم المسؤول:</span>
+              <p className="font-bold text-base text-ink-strong">
                 {ownerName} {userEmail ? `(${userEmail})` : ''}
               </p>
             </div>
             <div>
-              <span className="text-slate-500 block mb-1">العملة الأساسية:</span>
-              <p className="font-bold text-base text-slate-900">الجنيه المصري (EGP / ج.م)</p>
+              <span className="text-ink-muted block mb-1">العملة الأساسية:</span>
+              <p className="font-bold text-base text-ink-strong">الجنيه المصري (EGP / ج.م)</p>
             </div>
             <div>
-              <span className="text-slate-500 block mb-1">معرف المتجر (Shop ID):</span>
-              <p className="font-mono text-xs text-slate-700" dir="ltr">
+              <span className="text-ink-muted block mb-1">معرف المتجر (Shop ID):</span>
+              <p className="font-mono text-xs text-ink" dir="ltr">
                 {shopId || 'وضع محلي (بدون معرف سحابي)'}
               </p>
             </div>
@@ -121,12 +124,76 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* مظهر الواجهة (الوضع الفاتح / الوضع الداكن) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {theme === 'dark' ? (
+              <Moon strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
+            ) : (
+              <Sun strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-truffle" />
+            )}
+            <span>مظهر النظام وألوان العرض</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setTheme('light')}
+              className={`p-4 rounded-2xl border text-right transition-colors flex items-center justify-between ${
+                theme === 'light'
+                  ? 'bg-flame/20 border-flame text-ink-strong font-bold'
+                  : 'bg-surface-alt border-line text-ink hover:bg-oatmeal/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Sun strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-truffle dark:text-flame" />
+                <div>
+                  <p className="text-sm font-bold text-ink-strong">الوضع الفاتح (Palladian)</p>
+                  <p className="text-xs text-ink-muted">خلفية دافئة مريحة للعين للاستخدام النهاري</p>
+                </div>
+              </div>
+              {theme === 'light' && <Badge variant="accent">مفعل</Badge>}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTheme('dark')}
+              className={`p-4 rounded-2xl border text-right transition-colors flex items-center justify-between ${
+                theme === 'dark'
+                  ? 'bg-flame/20 border-flame text-ink-strong font-bold'
+                  : 'bg-surface-alt border-line text-ink hover:bg-oatmeal/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Moon strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-fantastic dark:text-flame" />
+                <div>
+                  <p className="text-sm font-bold text-ink-strong">الوضع الداكن (Abyssal Blue)</p>
+                  <p className="text-xs text-ink-muted">تباين عالٍ مريح للإضاءة الخافتة والمساء</p>
+                </div>
+              </div>
+              {theme === 'dark' && <Badge variant="accent">مفعل</Badge>}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* حالة الاتصال الفعلية بقاعدة بيانات Supabase */}
-      <Card className={cloudStatus === 'error' ? 'border-rose-300' : ''}>
+      <Card className={cloudStatus === 'error' ? 'border-danger-border' : ''}>
         <CardHeader>
           <CardTitle className="flex items-center justify-between w-full">
             <span className="flex items-center gap-2">
-              <Key className={`w-5 h-5 ${cloudStatus === 'connected' ? 'text-emerald-600' : cloudStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`} />
+              <Key
+                strokeWidth={ICON_TOKENS.strokeWidth}
+                className={`w-5 h-5 ${
+                  cloudStatus === 'connected'
+                    ? 'text-success'
+                    : cloudStatus === 'error'
+                    ? 'text-danger-text'
+                    : 'text-ink-muted'
+                }`}
+              />
               <span>حالة تكامل Supabase السحابي</span>
             </span>
             {isSupabaseConfigured && (
@@ -137,7 +204,7 @@ export default function SettingsPage() {
                 isLoading={isCheckingCloud}
                 className="gap-1.5 text-xs"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
                 <span>فحص الاتصال الآن</span>
               </Button>
             )}
@@ -147,17 +214,17 @@ export default function SettingsPage() {
           <div
             className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border ${
               cloudStatus === 'connected'
-                ? 'bg-emerald-50/70 border-emerald-200'
+                ? 'bg-success-bg border-success-border'
                 : cloudStatus === 'error'
-                ? 'bg-rose-50 border-rose-300'
-                : 'bg-slate-50 border-slate-200'
+                ? 'bg-danger-bg border-danger-border'
+                : 'bg-surface-alt border-line'
             }`}
           >
             <div>
-              <p className="text-xs font-bold text-slate-900">حالة الاتصال الفعلية بقاعدة البيانات:</p>
+              <p className="text-xs font-bold text-ink-strong">حالة الاتصال الفعلية بقاعدة البيانات:</p>
               <p
                 className={`text-[11px] mt-0.5 ${
-                  cloudStatus === 'error' ? 'text-rose-800 font-semibold' : 'text-slate-600'
+                  cloudStatus === 'error' ? 'text-danger-text font-semibold' : 'text-ink-muted'
                 }`}
               >
                 {cloudStatus === 'connected'
@@ -186,16 +253,16 @@ export default function SettingsPage() {
           </div>
 
           {cloudStatus === 'error' && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="p-3 bg-warning-bg border border-warning-border rounded-xl text-xs text-warning flex items-start gap-2">
+              <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-warning shrink-0 mt-0.5" />
               <span>
                 يرجى تشغيل ملف الميجريشن <code className="font-mono font-bold">20261125_000005_fix_grants_rls_and_returns.sql</code> في Supabase SQL Editor لمنح صلاحيات الجداول لدور <code className="font-mono">authenticated</code> وتصحيح سياسات RLS.
               </span>
             </div>
           )}
 
-          <p className="text-[11px] text-slate-400">
-            ملفات التهجرة SQL موجودة في مجلد <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">supabase/migrations</code> لتشغيلها مباشرة في لوحة Supabase الخاصة بك.
+          <p className="text-[11px] text-ink-muted">
+            ملفات التهجرة SQL موجودة في مجلد <code className="font-mono bg-surface-alt border border-line px-1 py-0.5 rounded">supabase/migrations</code> لتشغيلها مباشرة في لوحة Supabase الخاصة بك.
           </p>
         </CardContent>
       </Card>
@@ -204,18 +271,18 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-brand-600" />
+            <Database strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-truffle dark:text-flame" />
             <span>النسخ الاحتياطي الكامل لقاعدة البيانات</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-ink-muted leading-relaxed">
             يمكنك تنزيل نسخة احتياطية بجميع الأصناف، الفواتير، ديون العملاء، الموردين، وجلسات الدرج في أي وقت، واستعادتها لحماية تجارتك.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Button variant="primary" size="lg" onClick={handleDownloadBackup} className="gap-2">
-              <Download className="w-4 h-4" />
+              <Download strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
               <span>تنزيل نسخة احتياطية كاملة (JSON)</span>
             </Button>
 
@@ -229,8 +296,8 @@ export default function SettingsPage() {
                   className="hidden"
                 />
                 <label htmlFor="restore-file">
-                  <span className="inline-flex items-center justify-center h-12 px-6 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm cursor-pointer transition-all gap-2">
-                    <Upload className="w-4 h-4" />
+                  <span className="inline-flex items-center justify-center h-12 px-6 rounded-xl border border-line bg-surface hover:bg-surface-alt text-ink font-semibold text-sm cursor-pointer transition-colors gap-2">
+                    <Upload strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
                     <span>استعادة من ملف نسخة احتياطية</span>
                   </span>
                 </label>
@@ -243,9 +310,9 @@ export default function SettingsPage() {
                       resetToSampleData();
                     }
                   }}
-                  className="text-rose-600 border-rose-200 hover:bg-rose-50 mr-auto"
+                  className="text-danger-text border-danger-border hover:bg-danger-bg mr-auto"
                 >
-                  <RotateCcw className="w-4 h-4 ml-1" />
+                  <RotateCcw strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
                   <span>إعادة ضبط البيانات النموذجية</span>
                 </Button>
               </>
