@@ -168,18 +168,18 @@ export default function DrawerPage() {
               </div>
 
               <div className="bg-success-bg/20 p-3 rounded-2xl border border-success-border/40">
-                <span className="text-palladian/90 block mb-1">إجمالي الوارد كاش (+):</span>
+                <span className="text-truffle-ink block mb-1">إجمالي الوارد كاش (+):</span>
                 <span className="text-base font-bold text-flame font-mono">
                   +{formatCurrency(activeDrawer.cashSales + activeDrawer.cashDebtPayments)}
                 </span>
-                <span className="text-[10px] text-oatmeal block mt-0.5">
+                <span className="text-[10px] text-truffle-ink block mt-0.5">
                   (مبيعات + سداد ديون)
                 </span>
               </div>
 
-              <div className="bg-truffle/30 p-3 rounded-2xl border border-truffle/60">
-                <span className="text-palladian/90 block mb-1">إجمالي المنصرف كاش (-):</span>
-                <span className="text-base font-bold text-palladian font-mono">
+              <div className="bg-truffle p-3 rounded-2xl border border-truffle">
+                <span className="text-truffle-ink block mb-1">إجمالي المنصرف كاش (-):</span>
+                <span className="text-base font-bold text-truffle-ink font-mono">
                   -{formatCurrency(
                     activeDrawer.cashExpenses +
                       activeDrawer.cashSupplierPayments +
@@ -187,7 +187,7 @@ export default function DrawerPage() {
                       activeDrawer.cashWithdrawals
                   )}
                 </span>
-                <span className="text-[10px] text-oatmeal block mt-0.5">
+                <span className="text-[10px] text-truffle-ink block mt-0.5">
                   (مصروفات + موردين + مرتجع + مسحوبات)
                 </span>
               </div>
@@ -260,7 +260,7 @@ export default function DrawerPage() {
                     <td className="p-3 sm:p-4 font-mono font-bold text-ink-strong">
                       {formatCurrency(session.expectedCash)}
                     </td>
-                    <td className="p-3 sm:p-4 font-mono font-black text-truffle dark:text-flame">
+                    <td className="p-3 sm:p-4 font-mono font-black text-danger-text dark:text-flame">
                       {session.actualCash !== null && session.actualCash !== undefined
                         ? formatCurrency(session.actualCash)
                         : '-'}

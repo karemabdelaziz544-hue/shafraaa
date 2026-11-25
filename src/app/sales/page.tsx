@@ -205,99 +205,189 @@ export default function SalesHistoryPage() {
       </div>
 
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          {isInitialLoading ? (
-            <TableSkeletonRows columns={8} rows={6} />
+        <CardContent className="p-0">
+          {isInitialLoading && salesInvoices.length === 0 ? (
+            <div className="p-4">
+              <TableSkeletonRows columns={8} rows={4} />
+            </div>
           ) : filteredInvoices.length === 0 ? (
             <div className="p-12 text-center text-ink-muted text-sm">
               لا توجد فواتير مبيعات مطابقة للبحث.
             </div>
           ) : (
-            <table className="w-full text-right text-xs sm:text-sm">
-              <thead className="bg-surface-alt text-ink font-bold border-b border-line">
-                <tr>
-                  <th className="p-3 sm:p-4">رقم الفاتورة</th>
-                  <th className="p-3 sm:p-4">العميل</th>
-                  <th className="p-3 sm:p-4">الحالة</th>
-                  <th className="p-3 sm:p-4">طريقة الدفع</th>
-                  <th className="p-3 sm:p-4">الإجمالي</th>
-                  {can('finance.view_cost_profit') && <th className="p-3 sm:p-4">مجمل الربح</th>}
-                  <th className="p-3 sm:p-4">المتبقي (دين)</th>
-                  <th className="p-3 sm:p-4 text-center">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-divider">
+            <>
+              {/* عرض البطاقات المتراصة للموبايل لإظهار الحالة والتفاصيل كاملة دون قص */}
+              <div className="md:hidden divide-y divide-divider">
                 {filteredInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-alt/60 transition-colors">
-                    <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
-                      {inv.invoiceNumber}
-                      <p className="text-[10px] text-ink-muted font-normal">
-                        {formatArabicDateTime(inv.createdAt)}
-                        {inv.createdByName ? ` • ${inv.createdByName}` : ''}
-                      </p>
-                    </td>
-                    <td className="p-3 sm:p-4 font-bold text-ink-strong">{inv.customerName}</td>
-                    <td className="p-3 sm:p-4">{getInvoiceStatusBadge(inv.status)}</td>
-                    <td className="p-3 sm:p-4">
-                      <Badge
-                        variant={
-                          inv.paymentMethod === 'cash'
-                            ? 'success'
-                            : inv.paymentMethod === 'wallet'
-                            ? 'accent'
-                            : inv.paymentMethod === 'instapay'
-                            ? 'info'
-                            : 'danger'
-                        }
-                      >
-                        {inv.paymentMethod === 'cash'
-                          ? 'كاش'
-                          : inv.paymentMethod === 'wallet'
-                          ? 'محفظة'
-                          : inv.paymentMethod === 'instapay'
-                          ? 'إنستاباي'
-                          : 'آجل'}
-                      </Badge>
-                    </td>
-                    <td className="p-3 sm:p-4 font-black text-ink-strong">
-                      {formatCurrency(inv.totalAmount)}
-                    </td>
-                    {can('finance.view_cost_profit') && (
-                      <td className="p-3 sm:p-4 font-black text-success">
-                        {formatCurrency(inv.grossProfit)}
-                      </td>
-                    )}
-                    <td className="p-3 sm:p-4 font-bold">
-                      {inv.remainingAmount > 0 ? (
-                        <span className="text-danger-text">{formatCurrency(inv.remainingAmount)}</span>
-                      ) : (
-                        <span className="text-success">خالص</span>
-                      )}
-                    </td>
-                    <td className="p-3 sm:p-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPrintInvoice(inv)}
-                          title="طباعة إيصال الفاتورة"
-                        >
-                          <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedInvoiceId(inv.id)}
-                          className="text-xs text-truffle dark:text-flame font-bold"
-                        >
-                          التفاصيل والمرتجع
-                        </Button>
+                  <div key={inv.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-mono font-black text-sm text-ink-strong dark:text-flame">
+                          {inv.invoiceNumber}
+                        </p>
+                        <p className="text-xs font-bold text-ink mt-0.5 truncate">{inv.customerName}</p>
+                        <p className="text-[11px] text-ink-muted mt-0.5">
+                          {formatArabicDateTime(inv.createdAt)}
+                          {inv.createdByName ? ` • ${inv.createdByName}` : ''}
+                        </p>
                       </div>
-                    </td>
-                  </tr>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        {getInvoiceStatusBadge(inv.status)}
+                        <Badge
+                          variant={
+                            inv.paymentMethod === 'cash'
+                              ? 'success'
+                              : inv.paymentMethod === 'wallet'
+                              ? 'accent'
+                              : inv.paymentMethod === 'instapay'
+                              ? 'info'
+                              : 'danger'
+                          }
+                        >
+                          {inv.paymentMethod === 'cash'
+                            ? 'كاش'
+                            : inv.paymentMethod === 'wallet'
+                            ? 'محفظة'
+                            : inv.paymentMethod === 'instapay'
+                            ? 'إنستاباي'
+                            : 'آجل'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-surface-alt border border-divider text-xs">
+                      <div>
+                        <span className="text-ink-muted block text-[11px]">الإجمالي</span>
+                        <span className="font-mono font-black text-ink-kpi">{formatCurrency(inv.totalAmount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-ink-muted block text-[11px]">المتبقي (دين)</span>
+                        {inv.remainingAmount > 0 ? (
+                          <span className="font-mono font-black text-danger-text">{formatCurrency(inv.remainingAmount)}</span>
+                        ) : (
+                          <span className="font-bold text-success">خالص</span>
+                        )}
+                      </div>
+                      {can('finance.view_cost_profit') && (
+                        <div className="col-span-2 pt-1 border-t border-divider flex items-center justify-between">
+                          <span className="text-ink-muted text-[11px]">مجمل الربح</span>
+                          <span className="font-mono font-black text-success">{formatCurrency(inv.grossProfit)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPrintInvoice(inv)}
+                        className="text-xs gap-1"
+                      >
+                        <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                        <span>طباعة</span>
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setSelectedInvoiceId(inv.id)}
+                        className="text-xs font-bold"
+                      >
+                        التفاصيل والمرتجع
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* جدول الديسكتوب */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-right text-xs sm:text-sm">
+                  <thead className="bg-surface-alt text-ink font-bold border-b border-line">
+                    <tr>
+                      <th className="p-3 sm:p-4">رقم الفاتورة</th>
+                      <th className="p-3 sm:p-4">العميل</th>
+                      <th className="p-3 sm:p-4">الحالة</th>
+                      <th className="p-3 sm:p-4">طريقة الدفع</th>
+                      <th className="p-3 sm:p-4">الإجمالي</th>
+                      {can('finance.view_cost_profit') && <th className="p-3 sm:p-4">مجمل الربح</th>}
+                      <th className="p-3 sm:p-4">المتبقي (دين)</th>
+                      <th className="p-3 sm:p-4 text-center">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-divider">
+                    {filteredInvoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-surface-alt/60 transition-colors">
+                        <td className="p-3 sm:p-4 font-mono font-bold text-danger-text dark:text-flame">
+                          {inv.invoiceNumber}
+                          <p className="text-[10px] text-ink-muted font-normal">
+                            {formatArabicDateTime(inv.createdAt)}
+                            {inv.createdByName ? ` • ${inv.createdByName}` : ''}
+                          </p>
+                        </td>
+                        <td className="p-3 sm:p-4 font-bold text-ink-strong">{inv.customerName}</td>
+                        <td className="p-3 sm:p-4">{getInvoiceStatusBadge(inv.status)}</td>
+                        <td className="p-3 sm:p-4">
+                          <Badge
+                            variant={
+                              inv.paymentMethod === 'cash'
+                                ? 'success'
+                                : inv.paymentMethod === 'wallet'
+                                ? 'accent'
+                                : inv.paymentMethod === 'instapay'
+                                ? 'info'
+                                : 'danger'
+                            }
+                          >
+                            {inv.paymentMethod === 'cash'
+                              ? 'كاش'
+                              : inv.paymentMethod === 'wallet'
+                              ? 'محفظة'
+                              : inv.paymentMethod === 'instapay'
+                              ? 'إنستاباي'
+                              : 'آجل'}
+                          </Badge>
+                        </td>
+                        <td className="p-3 sm:p-4 font-black text-ink-kpi">
+                          {formatCurrency(inv.totalAmount)}
+                        </td>
+                        {can('finance.view_cost_profit') && (
+                          <td className="p-3 sm:p-4 font-black text-success">
+                            {formatCurrency(inv.grossProfit)}
+                          </td>
+                        )}
+                        <td className="p-3 sm:p-4 font-bold">
+                          {inv.remainingAmount > 0 ? (
+                            <span className="text-danger-text">{formatCurrency(inv.remainingAmount)}</span>
+                          ) : (
+                            <span className="text-success">خالص</span>
+                          )}
+                        </td>
+                        <td className="p-3 sm:p-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPrintInvoice(inv)}
+                              title="طباعة إيصال الفاتورة"
+                            >
+                              <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedInvoiceId(inv.id)}
+                              className="text-xs text-danger-text dark:text-flame font-bold"
+                            >
+                              التفاصيل والمرتجع
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

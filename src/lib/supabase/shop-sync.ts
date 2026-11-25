@@ -256,7 +256,7 @@ export async function loadShopDataFromSupabase(
     canReadCustomers
       ? supabase
           .from('customers')
-          .select('*')
+          .select('id, shop_id, name, phone, credit_limit, current_balance, notes, created_at')
           .eq('shop_id', shopId)
           .is('deleted_at', null)
           .order('created_at', { ascending: false })
@@ -264,7 +264,7 @@ export async function loadShopDataFromSupabase(
     canReadSuppliers
       ? supabase
           .from('suppliers')
-          .select('*')
+          .select('id, shop_id, name, phone, owed_balance, notes, created_at')
           .eq('shop_id', shopId)
           .is('deleted_at', null)
           .order('created_at', { ascending: false })
@@ -355,7 +355,7 @@ export async function loadShopDataFromSupabase(
           .select('*')
           .eq('shop_id', shopId)
           .order('created_at', { ascending: false })
-          .limit(300)
+          .limit(150)
       : Promise.resolve(okEmpty),
   ]);
 

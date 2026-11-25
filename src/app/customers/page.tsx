@@ -117,88 +117,167 @@ export default function CustomersPage() {
         />
       </div>
 
-      {/* جدول العملاء */}
+      {/* جدول العملاء وبطاقات الموبايل */}
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          {isInitialLoading ? (
-            <TableSkeletonRows columns={5} rows={5} />
+        <CardContent className="p-0">
+          {isInitialLoading && customers.length === 0 ? (
+            <div className="p-4">
+              <TableSkeletonRows columns={5} rows={3} />
+            </div>
           ) : filteredCustomers.length === 0 ? (
             <div className="p-12 text-center text-ink-muted text-sm">
               لا يوجد عملاء مسجلين حالياً.
             </div>
           ) : (
-            <table className="w-full text-right text-xs sm:text-sm">
-              <thead className="bg-surface-alt text-ink font-bold border-b border-line">
-                <tr>
-                  <th className="p-3 sm:p-4">اسم العميل</th>
-                  <th className="p-3 sm:p-4">الهاتف</th>
-                  <th className="p-3 sm:p-4">حد الائتمان</th>
-                  <th className="p-3 sm:p-4">المديونية الحالية</th>
-                  <th className="p-3 sm:p-4">حالة الحساب</th>
-                  <th className="p-3 sm:p-4 text-center">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-divider">
+            <>
+              {/* عرض البطاقات المتراصة على الموبايل بحيث يظهر عمود "حالة الحساب" كاملاً دون قص */}
+              <div className="md:hidden divide-y divide-divider">
                 {filteredCustomers.map((c) => {
                   const isOverLimit = c.creditLimit > 0 && c.currentBalance > c.creditLimit;
                   return (
-                    <tr key={c.id} className="hover:bg-surface-alt/60 transition-colors">
-                      <td className="p-3 sm:p-4">
-                        <p className="font-bold text-ink-strong">{c.name}</p>
-                        {c.notes && <p className="text-[11px] text-ink-muted">{c.notes}</p>}
-                      </td>
-                      <td className="p-3 sm:p-4 font-mono text-ink-muted">
-                        {c.phone || 'غير مسجل'}
-                      </td>
-                      <td className="p-3 sm:p-4 font-mono text-ink-muted">
-                        {c.creditLimit > 0 ? formatCurrency(c.creditLimit) : 'غير محدد'}
-                      </td>
-                      <td className="p-3 sm:p-4 font-mono font-black text-danger-text">
-                        {formatCurrency(c.currentBalance)}
-                      </td>
-                      <td className="p-3 sm:p-4">
-                        {isOverLimit ? (
-                          <Badge variant="danger" className="gap-1">
-                            <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                            <span>تجاوز الحد بمبلغ {formatCurrency(c.currentBalance - c.creditLimit)}</span>
-                          </Badge>
-                        ) : c.currentBalance > 0 ? (
-                          <Badge variant="warning">عليه مديونية</Badge>
-                        ) : (
-                          <Badge variant="success">خالص</Badge>
-                        )}
-                      </td>
-                      <td className="p-3 sm:p-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {c.currentBalance > 0 && can('customers.collect_payment') && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedCustomer(c);
-                                setIsPaymentModalOpen(true);
-                              }}
-                              className="text-success border-success-border hover:bg-success-bg"
-                            >
-                              <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 ml-1" />
-                              <span>تحصيل دفعة</span>
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedCustomer(c)}
-                            className="text-truffle dark:text-flame text-xs font-bold"
-                          >
-                            كشف الحساب
-                          </Button>
+                    <div key={c.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-bold text-ink-strong text-sm truncate">{c.name}</p>
+                          <p className="text-xs font-mono text-ink-muted mt-0.5">
+                            {c.phone || 'بدون هاتف'}
+                          </p>
+                          {c.notes && <p className="text-[11px] text-ink-muted mt-0.5">{c.notes}</p>}
                         </div>
-                      </td>
-                    </tr>
+                        <div className="shrink-0">
+                          {isOverLimit ? (
+                            <Badge variant="danger" className="gap-1">
+                              <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                              <span>تجاوز الحد بمبلغ {formatCurrency(c.currentBalance - c.creditLimit)}</span>
+                            </Badge>
+                          ) : c.currentBalance > 0 ? (
+                            <Badge variant="warning">عليه مديونية</Badge>
+                          ) : (
+                            <Badge variant="success">خالص</Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-surface-alt border border-divider text-xs">
+                        <div>
+                          <span className="text-ink-muted block text-[11px]">المديونية الحالية</span>
+                          <span className="font-mono font-black text-danger-text">
+                            {formatCurrency(c.currentBalance)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-ink-muted block text-[11px]">حد الائتمان</span>
+                          <span className="font-mono font-bold text-ink-strong">
+                            {c.creditLimit > 0 ? formatCurrency(c.creditLimit) : 'غير محدد'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2">
+                        {c.currentBalance > 0 && can('customers.collect_payment') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCustomer(c);
+                              setIsPaymentModalOpen(true);
+                            }}
+                            className="text-success border-success-border hover:bg-success-bg"
+                          >
+                            <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 ml-1" />
+                            <span>تحصيل دفعة</span>
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setSelectedCustomer(c)}
+                          className="text-xs font-bold"
+                        >
+                          كشف الحساب
+                        </Button>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+
+              {/* جدول الشاشات المتوسطة والكبيرة */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-right text-xs sm:text-sm">
+                  <thead className="bg-surface-alt text-ink font-bold border-b border-line">
+                    <tr>
+                      <th className="p-3 sm:p-4">اسم العميل</th>
+                      <th className="p-3 sm:p-4">الهاتف</th>
+                      <th className="p-3 sm:p-4">حد الائتمان</th>
+                      <th className="p-3 sm:p-4">المديونية الحالية</th>
+                      <th className="p-3 sm:p-4">حالة الحساب</th>
+                      <th className="p-3 sm:p-4 text-center">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-divider">
+                    {filteredCustomers.map((c) => {
+                      const isOverLimit = c.creditLimit > 0 && c.currentBalance > c.creditLimit;
+                      return (
+                        <tr key={c.id} className="hover:bg-surface-alt/60 transition-colors">
+                          <td className="p-3 sm:p-4">
+                            <p className="font-bold text-ink-strong">{c.name}</p>
+                            {c.notes && <p className="text-[11px] text-ink-muted">{c.notes}</p>}
+                          </td>
+                          <td className="p-3 sm:p-4 font-mono text-ink-muted">
+                            {c.phone || 'غير مسجل'}
+                          </td>
+                          <td className="p-3 sm:p-4 font-mono text-ink-muted">
+                            {c.creditLimit > 0 ? formatCurrency(c.creditLimit) : 'غير محدد'}
+                          </td>
+                          <td className="p-3 sm:p-4 font-mono font-black text-danger-text">
+                            {formatCurrency(c.currentBalance)}
+                          </td>
+                          <td className="p-3 sm:p-4">
+                            {isOverLimit ? (
+                              <Badge variant="danger" className="gap-1">
+                                <AlertTriangle strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                                <span>تجاوز الحد بمبلغ {formatCurrency(c.currentBalance - c.creditLimit)}</span>
+                              </Badge>
+                            ) : c.currentBalance > 0 ? (
+                              <Badge variant="warning">عليه مديونية</Badge>
+                            ) : (
+                              <Badge variant="success">خالص</Badge>
+                            )}
+                          </td>
+                          <td className="p-3 sm:p-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              {c.currentBalance > 0 && can('customers.collect_payment') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedCustomer(c);
+                                    setIsPaymentModalOpen(true);
+                                  }}
+                                  className="text-success border-success-border hover:bg-success-bg"
+                                >
+                                  <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 ml-1" />
+                                  <span>تحصيل دفعة</span>
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedCustomer(c)}
+                                className="text-danger-text dark:text-flame text-xs font-bold"
+                              >
+                                كشف الحساب
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

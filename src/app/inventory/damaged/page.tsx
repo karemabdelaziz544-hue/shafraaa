@@ -173,16 +173,16 @@ export default function DamagedInventoryPage() {
       {/* بطاقات الإحصاءات الشهرية والتراكمية */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {canViewCost && (
-          <Card className="bg-truffle text-palladian border-truffle shadow-elevated">
+          <Card className="bg-truffle text-truffle-ink border-truffle shadow-elevated">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-palladian/90">خسائر الهالك هذا الشهر (بالتكلفة)</span>
+                <span className="text-xs font-bold text-truffle-ink">خسائر الهالك هذا الشهر (بالتكلفة)</span>
                 <TrendingDown strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono text-palladian">
+              <div className="text-2xl sm:text-3xl font-black font-mono text-truffle-ink">
                 {formatCurrency(thisMonthLosses)}
               </div>
-              <p className="text-xs text-palladian/85 mt-1">
+              <p className="text-xs text-truffle-ink mt-1">
                 تخصم مباشرة من أرباح الفترة بقائمة الدخل
               </p>
             </CardContent>
@@ -244,7 +244,7 @@ export default function DamagedInventoryPage() {
           {selectedMonth !== 'all' && (
             <button
               onClick={() => setSelectedMonth('all')}
-              className="text-xs text-truffle dark:text-flame hover:underline font-bold px-1"
+              className="text-xs text-danger-text dark:text-flame hover:underline font-bold px-1"
             >
               عرض الكل
             </button>

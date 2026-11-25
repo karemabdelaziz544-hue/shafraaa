@@ -366,7 +366,7 @@ function ProductsContent() {
                           {formatCurrency(totalCost)}
                         </td>
                       )}
-                      <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
+                      <td className="p-3 sm:p-4 font-mono font-bold text-danger-text dark:text-flame">
                         {formatCurrency(p.salePrice)}
                       </td>
                       {canViewCost && (
@@ -474,7 +474,7 @@ function ProductsContent() {
                 <button
                   type="button"
                   onClick={handleGenerateNewBarcode}
-                  className="text-[11px] font-bold text-truffle dark:text-flame hover:underline flex items-center gap-1"
+                  className="text-[11px] font-bold text-danger-text dark:text-flame hover:underline flex items-center gap-1"
                 >
                   <Sparkles strokeWidth={ICON_TOKENS.strokeWidth} className="w-3 h-3" />
                   <span>توليد كود تلقائي</span>
@@ -565,7 +565,7 @@ function ProductsContent() {
                 onChange={(e) =>
                   setFormData({ ...formData, salePrice: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full h-11 px-3 text-sm border border-line bg-surface rounded-xl font-black text-truffle dark:text-flame focus:outline-none focus:border-flame"
+                className="w-full h-11 px-3 text-sm border border-line bg-surface rounded-xl font-black text-danger-text dark:text-flame focus:outline-none focus:border-flame"
               />
             </div>
 

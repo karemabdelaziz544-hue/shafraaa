@@ -195,7 +195,7 @@ function LoginContent() {
                         setMode('reset');
                         setMessage(null);
                       }}
-                      className="text-[11px] font-bold text-truffle dark:text-flame hover:underline"
+                      className="text-[11px] font-bold text-danger-text dark:text-flame hover:underline"
                     >
                       نسيت كلمة المرور؟
                     </button>
@@ -242,7 +242,7 @@ function LoginContent() {
                     setMode('login');
                     setMessage(null);
                   }}
-                  className="text-xs text-truffle dark:text-flame hover:underline font-bold"
+                  className="text-xs text-danger-text dark:text-flame hover:underline font-bold"
                 >
                   العودة إلى تسجيل الدخول
                 </button>
@@ -253,7 +253,7 @@ function LoginContent() {
                     setMode(mode === 'signup' ? 'login' : 'signup');
                     setMessage(null);
                   }}
-                  className="text-xs text-truffle dark:text-flame hover:underline font-bold"
+                  className="text-xs text-danger-text dark:text-flame hover:underline font-bold"
                 >
                   {mode === 'signup' ? 'لديك حساب بالفعل؟ سجل دخولك' : 'إنشاء متجر جديد (حساب مدير)'}
                 </button>

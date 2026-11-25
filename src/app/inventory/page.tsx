@@ -201,7 +201,7 @@ export default function InventoryPage() {
                         <td className="p-3 sm:p-4 font-mono text-ink">{formatCurrency(totalCost)}</td>
                       )}
                       {canViewCost && (
-                        <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
+                        <td className="p-3 sm:p-4 font-mono font-bold text-danger-text dark:text-flame">
                           {formatCurrency(valueAtCost)}
                         </td>
                       )}

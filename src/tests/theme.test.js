@@ -18,7 +18,7 @@ function collectFiles(dir, exts = ['.ts', '.tsx']) {
 
 test('9. اختبار نظام الألوان الموحد MP072 وعدم وجود ألوان زرقاء قديمة أو أيقونات مختلطة', () => {
   const tokensSrc = fs.readFileSync(path.join(process.cwd(), 'src/lib/design-tokens.ts'), 'utf8');
-  for (const hex of ['#EEE9DF', '#C9C1B1', '#2C3B4D', '#1B2632', '#FFB162', '#A35139']) {
+  for (const hex of ['#EEE9DF', '#C9C1B1', '#2C3B4D', '#1B2632', '#FFB162', '#A35139', '#F1ECE2', '#FBF9F4', '#263647', '#853D29', '#F7F4EE', '#5A6B7D', '#E0D6C2']) {
     assert.ok(tokensSrc.includes(hex), `يجب وجود اللون ${hex} في design-tokens.ts`);
   }
 
@@ -26,6 +26,8 @@ test('9. اختبار نظام الألوان الموحد MP072 وعدم وجو
   assert.ok(globalsSrc.includes(':root'), 'يجب تعريف متغيرات الوضع الفاتح :root');
   assert.ok(globalsSrc.includes('.dark'), 'يجب تعريف متغيرات الوضع الداكن .dark');
   assert.ok(globalsSrc.includes('stroke-width: 1.75'), 'يجب توحيد سُمك خط Lucide إلى 1.75');
+  assert.ok(globalsSrc.includes('--tw-ring-color: rgb(255 177 98 / 0.55)'), 'يجب تعيين لون التركيز الافتراضي إلى Burning Flame');
+  assert.ok(globalsSrc.includes('@media print'), 'يجب وجود أنماط الطباعة @media print');
 
   const manifest = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public/manifest.json'), 'utf8'));
   assert.strictEqual(manifest.background_color, '#EEE9DF');

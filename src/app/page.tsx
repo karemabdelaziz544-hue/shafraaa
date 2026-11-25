@@ -143,7 +143,7 @@ export default function HomePage() {
                 <TrendingUp strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-black text-ink-strong">
+            <div className="text-lg sm:text-2xl font-black text-ink-kpi">
               <AnimatedNumber value={todaySalesTotal} />
             </div>
             <p className="text-xs text-ink-muted mt-1">
@@ -182,7 +182,7 @@ export default function HomePage() {
                   <Package strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
                 </div>
               </div>
-              <div className="text-lg sm:text-2xl font-black text-ink-strong">
+              <div className="text-lg sm:text-2xl font-black text-ink-kpi">
                 <AnimatedNumber value={products.length} formatter={(n) => `${Math.round(n)} صنف`} />
               </div>
               <p className="text-xs text-ink-muted mt-1">
@@ -219,7 +219,7 @@ export default function HomePage() {
                 <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-black text-ink-strong">
+            <div className="text-lg sm:text-2xl font-black text-ink-kpi">
               <AnimatedNumber value={currentDrawerCash} />
             </div>
             <p className="text-xs text-ink-muted mt-1 flex items-center gap-1">
@@ -308,7 +308,7 @@ export default function HomePage() {
                 {lowStockProducts.length > 0 ? `${lowStockProducts.length} صنف ناقص` : 'المخزون آمن'}
               </Badge>
             </CardTitle>
-            <Link href="/products?filter=low-stock" className="text-xs text-truffle dark:text-flame font-bold hover:underline">
+            <Link href="/products?filter=low-stock" className="text-xs text-danger-text dark:text-flame font-bold hover:underline">
               عرض الكل
             </Link>
           </div>
@@ -418,7 +418,7 @@ export default function HomePage() {
         <CardHeader>
           <CardTitle>آخر العمليات الفورية</CardTitle>
           <Link href="/sales">
-            <Button variant="ghost" size="sm" className="text-xs text-truffle dark:text-flame font-bold">
+            <Button variant="ghost" size="sm" className="text-xs text-danger-text dark:text-flame font-bold">
               <span>عرض كل الفواتير</span>
               <ChevronLeft strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 mr-1" />
             </Button>

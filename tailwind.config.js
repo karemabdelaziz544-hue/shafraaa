@@ -31,9 +31,12 @@ module.exports = {
         },
         line: 'rgb(var(--color-border) / <alpha-value>)',
         divider: 'rgb(var(--color-divider) / <alpha-value>)',
+        'badge-neutral': 'rgb(var(--color-badge-neutral) / <alpha-value>)',
+        'chart-bar': 'rgb(var(--color-chart-bar) / <alpha-value>)',
         ink: {
           DEFAULT: 'rgb(var(--color-ink) / <alpha-value>)',
           strong: 'rgb(var(--color-ink-strong) / <alpha-value>)',
+          kpi: 'rgb(var(--color-kpi) / <alpha-value>)',
           muted: 'rgb(var(--color-ink-muted) / <alpha-value>)',
         },
         success: {
@@ -59,6 +62,9 @@ module.exports = {
           bg: 'rgb(var(--color-info-bg) / <alpha-value>)',
           border: 'rgb(var(--color-info-border) / <alpha-value>)',
         },
+      },
+      ringColor: {
+        DEFAULT: 'rgb(255 177 98 / 0.55)',
       },
       fontFamily: {
         cairo: ['Cairo', 'Tajawal', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],

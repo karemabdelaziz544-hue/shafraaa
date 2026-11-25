@@ -289,7 +289,7 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="p-5">
             <span className="text-xs font-bold text-ink-muted block mb-1">إجمالي المبيعات</span>
-            <div className="text-2xl font-black text-ink-strong font-mono">
+            <div className="text-2xl font-black text-ink-kpi font-mono">
               <AnimatedNumber value={totalSalesRevenue} />
             </div>
             <p className="text-xs text-ink-muted mt-1">عدد الفواتير: {filteredSales.length}</p>
@@ -302,7 +302,7 @@ export default function ReportsPage() {
               <span className="text-xs font-bold text-ink-muted block mb-1">
                 تكلفة البضاعة المباعة (COGS)
               </span>
-              <div className="text-2xl font-black text-ink font-mono">
+              <div className="text-2xl font-black text-ink-kpi font-mono">
                 <AnimatedNumber value={totalCostOfGoodsSold} />
               </div>
               <p className="text-xs text-ink-muted mt-1">
@@ -367,7 +367,7 @@ export default function ReportsPage() {
                         <p className="text-[10px] text-ink-muted">الكمية المباعة: {p.quantity} قطعة</p>
                       </div>
                     </div>
-                    <span className="font-black text-xs font-mono text-truffle dark:text-flame">
+                    <span className="font-black text-xs font-mono text-danger-text dark:text-flame">
                       {formatCurrency(p.revenue)}
                     </span>
                   </div>

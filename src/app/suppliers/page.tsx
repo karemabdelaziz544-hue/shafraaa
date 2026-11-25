@@ -412,92 +412,153 @@ export default function SuppliersPage() {
         />
       </div>
 
-      {/* التبويب 1 */}
+      {/* التبويب 1: الموردين وكشوف الحساب */}
       {activeTab === 'suppliers' && (
         <Card>
-          <CardContent className="p-0 overflow-x-auto">
-            {isInitialLoading ? (
-              <TableSkeletonRows columns={5} rows={5} />
+          <CardContent className="p-0">
+            {isInitialLoading && suppliers.length === 0 ? (
+              <div className="p-4">
+                <TableSkeletonRows columns={4} rows={3} />
+              </div>
             ) : filteredSuppliers.length === 0 ? (
               <div className="p-12 text-center text-ink-muted text-sm">
                 لا يوجد موردين مطابقين للبحث.
               </div>
             ) : (
-              <table className="w-full text-right text-xs sm:text-sm">
-                <thead className="bg-surface-alt text-ink font-bold border-b border-line">
-                  <tr>
-                    <th className="p-3 sm:p-4">اسم المورد</th>
-                    <th className="p-3 sm:p-4">رقم الهاتف</th>
-                    <th className="p-3 sm:p-4">المستحق للمورد (دين علينا)</th>
-                    <th className="p-3 sm:p-4 text-center">إجراءات المورد</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-divider">
+              <>
+                <div className="md:hidden divide-y divide-divider">
                   {filteredSuppliers.map((s) => (
-                    <tr key={s.id} className="hover:bg-surface-alt/60 transition-colors">
-                      <td className="p-3 sm:p-4">
-                        <p className="font-bold text-ink-strong text-sm">{s.name}</p>
-                      </td>
-                      <td className="p-3 sm:p-4 font-mono text-ink-muted">
-                        {s.phone ? (
-                          <span className="flex items-center gap-1.5">
-                            <Phone strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 text-ink-muted" />
-                            <span>{s.phone}</span>
-                          </span>
-                        ) : (
-                          <span className="text-ink-muted">غير مسجل</span>
-                        )}
-                      </td>
-                      <td className="p-3 sm:p-4 font-mono font-black">
+                    <div key={s.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-bold text-ink-strong text-sm">{s.name}</p>
+                          <p className="text-xs font-mono text-ink-muted mt-0.5">
+                            {s.phone || 'غير مسجل'}
+                          </p>
+                        </div>
                         {s.owedBalance > 0 ? (
-                          <span className="text-danger-text font-bold text-sm">
+                          <Badge variant="danger" className="font-mono">
                             {formatCurrency(s.owedBalance)}
-                          </span>
+                          </Badge>
                         ) : (
-                          <span className="text-success font-bold">خالص (0.00 ج.م)</span>
+                          <Badge variant="success">خالص</Badge>
                         )}
-                      </td>
-                      <td className="p-3 sm:p-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLedgerSupplier(s)}
-                            className="text-xs gap-1 font-bold"
-                          >
-                            <BookOpen strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                            <span>كشف الحساب</span>
-                          </Button>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLedgerSupplier(s)}
+                          className="text-xs gap-1 font-bold"
+                        >
+                          <BookOpen strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                          <span>كشف الحساب</span>
+                        </Button>
+                        {can('suppliers.manage') && (
+                          <>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => openPurchaseModal(s)}
+                              className="text-xs gap-1"
+                            >
+                              <PackagePlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                              <span>فاتورة توريد</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openPaymentModal(s)}
+                              className="text-danger-text border-danger-border hover:bg-danger-bg text-xs font-bold gap-1"
+                            >
+                              <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                              <span>سداد دفعة</span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-                          {can('suppliers.manage') && (
-                            <>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => openPurchaseModal(s)}
-                                className="text-xs gap-1"
-                              >
-                                <PackagePlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                                <span>فاتورة توريد</span>
-                              </Button>
-
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-right text-xs sm:text-sm">
+                    <thead className="bg-surface-alt text-ink font-bold border-b border-line">
+                      <tr>
+                        <th className="p-3 sm:p-4">اسم المورد</th>
+                        <th className="p-3 sm:p-4">رقم الهاتف</th>
+                        <th className="p-3 sm:p-4">المستحق للمورد (دين علينا)</th>
+                        <th className="p-3 sm:p-4 text-center">إجراءات المورد</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-divider">
+                      {filteredSuppliers.map((s) => (
+                        <tr key={s.id} className="hover:bg-surface-alt/60 transition-colors">
+                          <td className="p-3 sm:p-4">
+                            <p className="font-bold text-ink-strong text-sm">{s.name}</p>
+                          </td>
+                          <td className="p-3 sm:p-4 font-mono text-ink-muted">
+                            {s.phone ? (
+                              <span className="flex items-center gap-1.5">
+                                <Phone strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 text-ink-muted" />
+                                <span>{s.phone}</span>
+                              </span>
+                            ) : (
+                              <span className="text-ink-muted">غير مسجل</span>
+                            )}
+                          </td>
+                          <td className="p-3 sm:p-4 font-mono font-black">
+                            {s.owedBalance > 0 ? (
+                              <span className="text-danger-text font-bold text-sm">
+                                {formatCurrency(s.owedBalance)}
+                              </span>
+                            ) : (
+                              <span className="text-success font-bold">خالص (0.00 ج.م)</span>
+                            )}
+                          </td>
+                          <td className="p-3 sm:p-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openPaymentModal(s)}
-                                className="text-danger-text border-danger-border hover:bg-danger-bg text-xs font-bold gap-1"
+                                onClick={() => setLedgerSupplier(s)}
+                                className="text-xs gap-1 font-bold"
                               >
-                                <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                                <span>سداد دفعة</span>
+                                <BookOpen strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                                <span>كشف الحساب</span>
                               </Button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+                              {can('suppliers.manage') && (
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => openPurchaseModal(s)}
+                                    className="text-xs gap-1"
+                                  >
+                                    <PackagePlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                                    <span>فاتورة توريد</span>
+                                  </Button>
+
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openPaymentModal(s)}
+                                    className="text-danger-text border-danger-border hover:bg-danger-bg text-xs font-bold gap-1"
+                                  >
+                                    <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                                    <span>سداد دفعة</span>
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -512,8 +573,10 @@ export default function SuppliersPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            {isInitialLoading ? (
-              <TableSkeletonRows columns={7} rows={5} />
+            {isInitialLoading && purchaseInvoices.length === 0 ? (
+              <div className="p-4">
+                <TableSkeletonRows columns={7} rows={3} />
+              </div>
             ) : filteredInvoices.length === 0 ? (
               <div className="p-12 text-center text-ink-muted text-sm">
                 لا توجد فواتير شراء وتوريد مسجلة حتى الآن.

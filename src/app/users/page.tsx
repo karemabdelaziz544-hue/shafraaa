@@ -441,7 +441,7 @@ export default function UsersPermissionsPage() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-ink-muted font-semibold">إجمالي المستخدمين</p>
-              <p className="text-2xl font-black text-ink-strong mt-1">{users.length}</p>
+              <p className="text-2xl font-black text-ink-kpi mt-1">{users.length}</p>
             </div>
             <Users strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
           </CardContent>
@@ -461,7 +461,7 @@ export default function UsersPermissionsPage() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-ink-muted font-semibold">المديرون النشطون</p>
-              <p className="text-2xl font-black text-ink-strong mt-1">{activeAdminCount}</p>
+              <p className="text-2xl font-black text-ink-kpi mt-1">{activeAdminCount}</p>
             </div>
             <ShieldCheck strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-flame" />
           </CardContent>

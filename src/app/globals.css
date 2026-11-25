@@ -12,56 +12,67 @@
   --color-flame-hover: 242 161 81;
   --color-truffle: 163 81 57;     /* #A35139 */
 
-  /* الوضع الفاتح (Light Mode - Palladian + Blue Fantastic) */
-  --color-canvas: 238 233 223;        /* #EEE9DF */
-  --color-surface: 247 244 238;       /* #F7F4EE سطح البطاقات المرفوع */
-  --color-surface-alt: 231 225 213;   /* #E7E1D5 رؤوس الجداول والأسطح الثانوية */
-  --color-border: 201 193 177;        /* #C9C1B1 الحدود والفواصل */
-  --color-divider: 218 211 198;
+  /* الوضع الفاتح (Light Mode - عمق بصري وتباين أوضح) */
+  --color-canvas: 241 236 226;        /* #F1ECE2 */
+  --color-surface: 251 249 244;       /* #FBF9F4 */
+  --color-surface-alt: 235 229 216;   /* #EBE5D8 */
+  --color-border: 189 179 160;        /* #BDB3A0 */
+  --color-divider: 214 205 186;       /* #D6CDBA */
   --color-ink: 44 59 77;              /* #2C3B4D النص الأساسي */
-  --color-ink-strong: 27 38 50;       /* #1B2632 العناوين والأرقام القوية */
-  --color-ink-muted: 74 89 107;       /* #4A596B نص ثانوي بتباين >= 5.8:1 */
-  --color-accent-ink: 27 38 50;       /* نص داكن على الخلفية البرتقالية #FFB162 */
-  --color-secondary-ink: 238 233 223; /* نص فاتح #EEE9DF على الخلفية الداكنة */
+  --color-ink-strong: 27 38 50;       /* #1B2632 العناوين */
+  --color-kpi: 44 59 77;              /* #2C3B4D الأرقام الكبيرة */
+  --color-ink-muted: 74 89 107;       /* #4A596B */
+  --color-accent-ink: 27 38 50;       /* #1B2632 على الخلفية البرتقالية */
+  --color-secondary-ink: 247 244 238; /* #F7F4EE نص فاتح كامل التباين على الخلفية الداكنة و Truffle */
+  --color-badge-neutral: 224 214 194; /* #E0D6C2 */
+  --color-chart-bar: 224 214 194;     /* #E0D6C2 أعمدة الأيام العادية */
 
-  /* حالات النجاح والتحذير والخطر المنسجمة مع الهوية (بتباين >= 4.5:1) */
-  --color-success: 47 94 78;          /* أخضر ميرمية هادئ #2F5E4E */
+  /* حلقة التركيز الافتراضية من Tailwind بلون Burning Flame بدلاً من الأزرق الافتراضي */
+  --tw-ring-color: rgb(255 177 98 / 0.55);
+
+  /* حالات النجاح والتحذير والخطر المنسجمة مع الهوية (تباين >= 4.5:1) */
+  --color-success: 47 94 78;          /* #2F5E4E */
   --color-success-bg: 227 235 229;
   --color-success-border: 175 196 182;
-  --color-success-ink: 238 233 223;
+  --color-success-ink: 247 244 238;
 
-  --color-warning: 122 72 22;         /* كهرماني دافئ #7A4816 */
+  --color-warning: 122 72 22;         /* #7A4816 */
   --color-warning-bg: 249 232 208;
   --color-warning-border: 227 169 108;
 
-  --color-danger: 163 81 57;          /* Truffle Trouble #A35139 */
-  --color-danger-text: 133 61 41;     /* #853D29 */
+  --color-danger: 163 81 57;          /* Truffle #A35139 للخلفيات والأيقونات */
+  --color-danger-text: 133 61 41;     /* #853D29 للنصوص والأرقام والمديونيات على الفاتح */
   --color-danger-bg: 244 225 219;
   --color-danger-border: 214 165 150;
-  --color-danger-ink: 238 233 223;
+  --color-danger-ink: 247 244 238;    /* #F7F4EE */
 
   --color-info: 44 59 77;
   --color-info-bg: 224 221 213;
-  --color-info-border: 184 179 167;
+  --color-info-border: 189 179 160;
 
   /* الزوايا والظلال */
   --radius-control: 0.75rem;
   --radius-card: 1rem;
-  --shadow-card: 0 1px 2px 0 rgb(27 38 50 / 0.06);
+  --shadow-card: 0 2px 6px 0 rgb(27 38 50 / 0.10);
   --shadow-elevated: 0 12px 32px -8px rgb(27 38 50 / 0.16);
   --shadow-accent: 0 6px 18px -4px rgb(255 177 98 / 0.35);
 }
 
 .dark {
-  /* الوضع الداكن (Dark Mode - Abyssal #1B2632 + Blue Fantastic #2C3B4D) */
+  /* الوضع الداكن (Dark Mode - فصل أوضح بين البطاقات والخلفية) */
   --color-canvas: 27 38 50;           /* #1B2632 */
-  --color-surface: 35 48 63;          /* #23303F */
-  --color-surface-alt: 44 59 77;      /* #2C3B4D */
-  --color-border: 68 85 104;          /* #445568 */
-  --color-divider: 54 70 89;
+  --color-surface: 38 54 71;          /* #263647 */
+  --color-surface-alt: 47 64 84;      /* #2F4054 */
+  --color-border: 78 98 121;          /* #4E6279 */
+  --color-divider: 63 81 102;         /* #3F5166 */
   --color-ink: 238 233 223;           /* #EEE9DF */
-  --color-ink-strong: 247 244 238;
+  --color-ink-strong: 247 244 238;    /* #F7F4EE */
+  --color-kpi: 247 244 238;           /* #F7F4EE */
   --color-ink-muted: 201 193 177;     /* #C9C1B1 */
+  --color-secondary-ink: 247 244 238; /* #F7F4EE */
+  --color-badge-neutral: 90 107 125;  /* #5A6B7D للشارات المحايدة في الداكن */
+  --color-chart-bar: 44 59 77;        /* #2C3B4D */
+  --tw-ring-color: rgb(255 177 98 / 0.55);
 
   --color-success: 134 197 170;
   --color-success-bg: 30 56 47;
@@ -73,17 +84,25 @@
   --color-warning-border: 140 96 48;
 
   --color-danger: 163 81 57;
-  --color-danger-text: 235 152 128;
+  --color-danger-text: 242 164 142;
   --color-danger-bg: 61 31 24;
   --color-danger-border: 135 67 48;
-  --color-danger-ink: 238 233 223;
+  --color-danger-ink: 247 244 238;
 
   --color-info: 201 193 177;
-  --color-info-bg: 44 59 77;
-  --color-info-border: 78 96 117;
+  --color-info-bg: 47 64 84;
+  --color-info-border: 78 98 121;
 
-  --shadow-card: 0 1px 3px 0 rgb(10 15 22 / 0.35);
+  --shadow-card: 0 2px 6px 0 rgb(10 15 22 / 0.38);
   --shadow-elevated: 0 16px 36px -8px rgb(8 12 18 / 0.55);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    --tw-ring-color: rgb(255 177 98 / 0.55);
+  }
 }
 
 body {
@@ -100,17 +119,46 @@ body {
   stroke-width: 1.75;
 }
 
-/* طباعة الفواتير الحرارية والورقية */
+/* طباعة التقارير والفواتير بشكل نظيف وخلفية بيضاء ونصوص #1B2632 حتى أثناء الوضع الداكن */
 @media print {
-  aside, nav, header, .no-print {
+  :root,
+  .dark {
+    --color-canvas: 255 255 255;
+    --color-surface: 255 255 255;
+    --color-surface-alt: 247 244 238;
+    --color-border: 189 179 160;
+    --color-divider: 214 205 186;
+    --color-ink: 27 38 50;
+    --color-ink-strong: 27 38 50;
+    --color-kpi: 27 38 50;
+    --color-ink-muted: 44 59 77;
+    color-scheme: light !important;
+  }
+
+  aside,
+  nav,
+  header,
+  button,
+  .no-print {
     display: none !important;
   }
-  body, main {
+
+  html,
+  html.dark,
+  body,
+  main {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #1B2632 !important;
     padding: 0 !important;
     margin: 0 !important;
+    box-shadow: none !important;
   }
+
+  * {
+    box-shadow: none !important;
+  }
+
   .print-only {
     display: block !important;
   }

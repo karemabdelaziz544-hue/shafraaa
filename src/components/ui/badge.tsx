@@ -7,12 +7,12 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 export function Badge({ className, variant = 'default', children, ...props }: BadgeProps) {
   const variants = {
-    default: 'bg-oatmeal/45 text-ink-strong border-line',
+    default: 'bg-badge-neutral text-ink-strong border-line',
     success: 'bg-success-bg text-success border-success-border',
-    danger: 'bg-danger-bg text-danger-text border-danger-border',
+    danger: 'bg-truffle text-truffle-ink border-truffle',
     warning: 'bg-warning-bg text-warning border-warning-border',
     purple: 'bg-danger-bg text-danger-text border-danger-border',
-    accent: 'bg-flame/25 text-ink-strong border-flame',
+    accent: 'bg-flame/20 text-ink-strong border-flame',
     info: 'bg-info-bg text-ink-strong border-info-border',
   };
 

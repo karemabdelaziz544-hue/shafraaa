@@ -375,10 +375,10 @@ export default function NewSalePage() {
                       </h4>
                     </div>
                     <div className="mt-3 flex items-center justify-between pt-2 border-t border-divider">
-                      <span className="text-xs sm:text-sm font-black text-truffle dark:text-flame">
+                      <span className="text-xs sm:text-sm font-black text-danger-text dark:text-flame">
                         {formatCurrency(p.salePrice)}
                       </span>
-                      <span className="w-7 h-7 rounded-lg bg-flame/25 text-abyssal dark:text-flame flex items-center justify-center font-bold text-base group-hover:bg-flame group-hover:text-abyssal transition-colors">
+                      <span className="w-7 h-7 rounded-lg bg-flame/15 dark:bg-abyssal border border-flame/40 text-abyssal dark:text-flame flex items-center justify-center font-bold text-base group-hover:bg-flame group-hover:text-abyssal transition-colors">
                         +
                       </span>
                     </div>
@@ -421,7 +421,7 @@ export default function NewSalePage() {
                         setAddCustError('');
                         setIsAddCustomerOpen(true);
                       }}
-                      className="text-xs font-bold text-truffle dark:text-flame flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-flame/20 transition-colors"
+                      className="text-xs font-bold text-danger-text dark:text-flame flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-flame/20 transition-colors"
                     >
                       <UserPlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
                       <span>+ إضافة عميل سريعاً</span>

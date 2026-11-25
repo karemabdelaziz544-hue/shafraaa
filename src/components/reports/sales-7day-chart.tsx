@@ -29,9 +29,10 @@ export function Sales7DayChart({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-5">
-        <div className="h-44 flex items-end justify-between gap-2 sm:gap-6 pt-4">
+        <div className="h-44 flex items-end justify-between gap-2 sm:gap-6 pt-4 border-b-2 border-fantastic dark:border-line pb-2">
           {days.map((day, idx) => {
             const scaleY = Math.max(0.08, Math.min(1, day.total / maxDailySales));
+            const isToday = idx === days.length - 1;
             return (
               <div key={day.date} className="flex-1 flex flex-col items-center gap-2 group">
                 <span className="text-[10px] font-bold text-ink-strong opacity-0 group-hover:opacity-100 transition-opacity">
@@ -47,10 +48,22 @@ export function Sales7DayChart({
                       ease: MOTION_EASINGS.standard,
                     }}
                     style={{ transformOrigin: 'bottom center' }}
-                    className="w-full h-full bg-fantastic dark:bg-flame hover:bg-flame dark:hover:bg-truffle rounded-lg transition-colors"
+                    className={
+                      isToday
+                        ? 'w-full h-full bg-flame border border-abyssal/20 rounded-lg transition-colors'
+                        : 'w-full h-full bg-chart-bar hover:bg-flame/80 border border-line/60 rounded-lg transition-colors'
+                    }
                   />
                 </div>
-                <span className="text-xs font-bold text-ink">{day.label}</span>
+                <span
+                  className={
+                    isToday
+                      ? 'text-xs font-black text-ink-strong dark:text-flame'
+                      : 'text-xs font-bold text-ink-muted'
+                  }
+                >
+                  {day.label}
+                </span>
               </div>
             );
           })}

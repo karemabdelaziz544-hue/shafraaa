@@ -99,8 +99,8 @@ export function DesktopSidebar() {
               className={cn(
                 'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-[transform,background-color,color] duration-150 active:scale-[0.98] group',
                 isActive
-                  ? 'bg-flame text-abyssal shadow-sm font-bold'
-                  : 'text-palladian/85 hover:bg-abyssal/45 hover:text-palladian',
+                  ? 'bg-gradient-to-l from-flame/15 via-flame/10 to-transparent border-r-[3px] border-flame text-flame font-bold'
+                  : 'text-truffle-ink hover:bg-abyssal/45 hover:text-flame',
                 item.highlight && !isActive && 'text-flame bg-abyssal/40 border border-flame/25 hover:bg-abyssal/70'
               )}
             >
@@ -109,10 +109,10 @@ export function DesktopSidebar() {
                 className={cn(
                   'w-5 h-5 shrink-0 transition-transform group-hover:scale-105',
                   isActive
-                    ? 'text-abyssal'
+                    ? 'text-flame'
                     : item.highlight
                     ? 'text-flame'
-                    : 'text-oatmeal group-hover:text-palladian'
+                    : 'text-oatmeal group-hover:text-flame'
                 )}
               />
               <span>{item.label}</span>

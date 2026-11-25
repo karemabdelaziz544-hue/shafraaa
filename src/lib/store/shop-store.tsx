@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
@@ -638,6 +639,13 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async (reason?: string) => {
+    try {
+      if (typeof window !== 'undefined' && userId) {
+        sessionStorage.removeItem(`shafra_snapshot_${userId}`);
+      }
+    } catch {
+      // تجاهل أخطاء التخزين المؤقت
+    }
     if (supabase) {
       await supabase.auth.signOut();
     }
@@ -652,64 +660,119 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         ? '/login?timeout=1'
         : '/login';
     router.replace(target);
-  }, [supabase, clearShopState, router]);
+  }, [supabase, clearShopState, router, userId]);
+
+  const inFlightHydrationRef = useRef<{ uid: string; promise: Promise<boolean> } | null>(null);
+  const loadedUserRef = useRef<string | null>(null);
+
+  const applyHydratedPayload = useCallback(
+    (p: NonNullable<Awaited<ReturnType<typeof loadShopDataFromSupabase>>['payload']>, email?: string | null) => {
+      setShopId(p.shopId);
+      setShopName(p.shopName);
+      setOwnerName(p.ownerName);
+      setCurrentUserName(p.currentUserName);
+      setUserRole(p.userRole);
+      setPermissions(p.permissions);
+      setSessionTimeoutMinutes(p.sessionTimeoutMinutes || 120);
+      setUserEmail(email || null);
+      setCloudError(null);
+      setProducts(p.products);
+      setCustomers(p.customers);
+      setSuppliers(p.suppliers);
+      setSupplierPayments(p.supplierPayments);
+      setDamagedItems(p.damagedItems);
+      setSalesInvoices(p.salesInvoices);
+      setSalesReturns(p.salesReturns);
+      setPurchaseInvoices(p.purchaseInvoices);
+      setExpenses(p.expenses);
+      setOwnerWithdrawals(p.ownerWithdrawals);
+      setPhysicalCounts(p.physicalCounts);
+      setDrawerSessions(p.drawerSessions);
+      setAuditLogs(p.auditLogs);
+      setIsLoaded(true);
+    },
+    []
+  );
 
   const hydrateFromSupabase = useCallback(
     async (uid: string, email?: string | null, opts?: { silent?: boolean }): Promise<boolean> => {
       if (!supabase) return false;
-      if (!opts?.silent) setIsAuthChecking(true);
-      try {
-        const result = await loadShopDataFromSupabase(supabase, uid);
-        if (result.deactivated) {
-          errorToast(result.error || 'تم إيقاف هذا الحساب من قِبل مدير النظام');
-          await supabase.auth.signOut();
-          clearShopState();
-          setUserId(null);
-          setUserEmail(null);
-          setIsAuthenticated(false);
-          router.replace('/login?deactivated=1');
-          return false;
-        }
-        if (result.payload) {
-          const p = result.payload;
-          setShopId(p.shopId);
-          setShopName(p.shopName);
-          setOwnerName(p.ownerName);
-          setCurrentUserName(p.currentUserName);
-          setUserRole(p.userRole);
-          setPermissions(p.permissions);
-          setSessionTimeoutMinutes(p.sessionTimeoutMinutes || 120);
-          setUserEmail(email || null);
-          setCloudError(null);
-          setProducts(p.products);
-          setCustomers(p.customers);
-          setSuppliers(p.suppliers);
-          setSupplierPayments(p.supplierPayments);
-          setDamagedItems(p.damagedItems);
-          setSalesInvoices(p.salesInvoices);
-          setSalesReturns(p.salesReturns);
-          setPurchaseInvoices(p.purchaseInvoices);
-          setExpenses(p.expenses);
-          setOwnerWithdrawals(p.ownerWithdrawals);
-          setPhysicalCounts(p.physicalCounts);
-          setDrawerSessions(p.drawerSessions);
-          setAuditLogs(p.auditLogs);
-          return true;
-        } else {
-          setShopId(null);
-          setCloudError(result.error || 'فشل تحميل بيانات المتجر من Supabase');
-          return false;
-        }
-      } catch (err: any) {
-        setShopId(null);
-        setCloudError(err?.message || 'حدث خطأ أثناء الاتصال بـ Supabase');
-        return false;
-      } finally {
-        setIsLoaded(true);
-        if (!opts?.silent) setIsAuthChecking(false);
+      if (inFlightHydrationRef.current && inFlightHydrationRef.current.uid === uid) {
+        return inFlightHydrationRef.current.promise;
       }
+
+      // تحميل فوري من ذاكرة الجلسة المؤقتة لنفس المستخدم لإزالة الانتظار الطويل للـ skeleton ثم التحديث بالخلفية
+      let usedFastSnapshot = false;
+      if (!opts?.silent && loadedUserRef.current !== uid && typeof window !== 'undefined') {
+        try {
+          const cachedRaw = sessionStorage.getItem(`shafra_snapshot_${uid}`);
+          if (cachedRaw) {
+            const parsed = JSON.parse(cachedRaw);
+            if (parsed?.shopId && Array.isArray(parsed.customers) && Array.isArray(parsed.suppliers)) {
+              applyHydratedPayload(parsed, email);
+              setIsAuthChecking(false);
+              usedFastSnapshot = true;
+            }
+          }
+        } catch {
+          // تجاهل أي بيانات مؤقتة تالفة
+        }
+      }
+
+      if (!opts?.silent && !usedFastSnapshot) {
+        setIsAuthChecking(true);
+      }
+
+      const task = (async () => {
+        try {
+          const result = await loadShopDataFromSupabase(supabase, uid);
+          if (result.deactivated) {
+            try {
+              if (typeof window !== 'undefined') sessionStorage.removeItem(`shafra_snapshot_${uid}`);
+            } catch {
+              // ignore
+            }
+            errorToast(result.error || 'تم إيقاف هذا الحساب من قِبل مدير النظام');
+            await supabase.auth.signOut();
+            clearShopState();
+            loadedUserRef.current = null;
+            setUserId(null);
+            setUserEmail(null);
+            setIsAuthenticated(false);
+            router.replace('/login?deactivated=1');
+            return false;
+          }
+          if (result.payload) {
+            loadedUserRef.current = uid;
+            applyHydratedPayload(result.payload, email);
+            try {
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem(`shafra_snapshot_${uid}`, JSON.stringify(result.payload));
+              }
+            } catch {
+              // تجاهل امتلاء الذاكرة المؤقتة
+            }
+            return true;
+          } else {
+            setShopId(null);
+            setCloudError(result.error || 'فشل تحميل بيانات المتجر من Supabase');
+            return false;
+          }
+        } catch (err: any) {
+          setShopId(null);
+          setCloudError(err?.message || 'حدث خطأ أثناء الاتصال بـ Supabase');
+          return false;
+        } finally {
+          inFlightHydrationRef.current = null;
+          setIsLoaded(true);
+          setIsAuthChecking(false);
+        }
+      })();
+
+      inFlightHydrationRef.current = { uid, promise: task };
+      return task;
     },
-    [supabase, clearShopState, router, errorToast]
+    [supabase, clearShopState, router, errorToast, applyHydratedPayload]
   );
 
   const refreshFromCloud = useCallback(async (): Promise<boolean> => {
@@ -807,9 +870,21 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
     let isMounted = true;
 
-    supabase.auth.getUser().then(({ data }) => {
+    // استخدام getSession أولاً لبدء جلب الجداول فوراً بدون تأخير إضافي لجولة getUser
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!isMounted) return;
-      const user = data?.user;
+      const sessionUser = data?.session?.user;
+      if (sessionUser) {
+        setUserId(sessionUser.id);
+        setUserEmail(sessionUser.email || null);
+        setIsAuthenticated(true);
+        void hydrateFromSupabase(sessionUser.id, sessionUser.email);
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      if (!isMounted) return;
+      const user = userData?.user;
       if (!user) {
         setUserId(null);
         setUserEmail(null);
@@ -829,6 +904,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (!isMounted) return;
       const user = session?.user;
       if (!user || event === 'SIGNED_OUT') {
+        loadedUserRef.current = null;
         setUserId(null);
         setUserEmail(null);
         setIsAuthenticated(false);
@@ -838,7 +914,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         setUserId(user.id);
         setUserEmail(user.email || null);
         setIsAuthenticated(true);
-        void hydrateFromSupabase(user.id, user.email);
+        const alreadyLoadedSameUser = loadedUserRef.current === user.id;
+        void hydrateFromSupabase(user.id, user.email, { silent: alreadyLoadedSameUser });
       }
     });
 
