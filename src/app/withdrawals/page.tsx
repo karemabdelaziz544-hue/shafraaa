@@ -15,7 +15,7 @@ import { formatCurrency, formatArabicDate } from '@/lib/formatters';
 import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function WithdrawalsPage() {
-  const { ownerName, ownerWithdrawals, addOwnerWithdrawal, isInitialLoading } = useShop();
+  const { ownerName, ownerWithdrawals, addOwnerWithdrawal, can, isInitialLoading } = useShop();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formData, setFormData] = useState<{
@@ -63,10 +63,12 @@ export default function WithdrawalsPage() {
           </p>
         </div>
 
-        <Button variant="primary" size="md" onClick={() => setIsAddModalOpen(true)}>
-          <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
-          <span>تسجيل سحب شخصي</span>
-        </Button>
+        {can('withdrawals.create') && (
+          <Button variant="primary" size="md" onClick={() => setIsAddModalOpen(true)}>
+            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
+            <span>تسجيل سحب شخصي</span>
+          </Button>
+        )}
       </div>
 
       <div className="bg-warning-bg border border-warning-border p-4 rounded-2xl flex items-center justify-between">

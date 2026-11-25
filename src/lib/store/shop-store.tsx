@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   calculateInvoiceTotals,
@@ -19,6 +19,16 @@ import {
   loadShopDataFromSupabase,
   uploadInvoicePhotoToStorage,
 } from '@/lib/supabase/shop-sync';
+import {
+  getDefaultHomeRoute,
+  hasPermission,
+  normalizeRoleKey,
+  resolveEffectivePermissions,
+  sanitizeExportDataByPermission,
+  type PermissionKey,
+  type RoleKey,
+} from '@/lib/rbac';
+import { isSessionTimedOut } from '@/lib/auth-security';
 
 export interface Product {
   id: string;
@@ -67,6 +77,8 @@ export interface SupplierPayment {
   paymentDate: string; // YYYY-MM-DD
   notes?: string;
   drawerSessionId?: string | null;
+  createdBy?: string | null;
+  createdByName?: string;
   createdAt: string;
 }
 
@@ -80,6 +92,8 @@ export interface DamagedItem {
   reason: string;
   notes?: string;
   date: string; // YYYY-MM-DD
+  createdBy?: string | null;
+  createdByName?: string;
   createdAt: string;
 }
 
@@ -141,6 +155,8 @@ export interface SaleInvoice {
   drawerSessionId?: string | null;
   notes?: string;
   status: 'completed' | 'returned_partial' | 'returned_full' | 'cancelled';
+  createdBy?: string | null;
+  createdByName?: string;
   createdAt: string;
   deletedAt?: string | null;
 }
@@ -167,6 +183,8 @@ export interface PurchaseInvoice {
   drawerSessionId?: string | null;
   notes?: string;
   invoicePhotoUrl?: string | null;
+  createdBy?: string | null;
+  createdByName?: string;
   createdAt: string;
   deletedAt?: string | null;
 }
@@ -180,6 +198,8 @@ export interface Expense {
   date: string;
   notes?: string;
   drawerSessionId?: string | null;
+  createdBy?: string | null;
+  createdByName?: string;
   createdAt: string;
   deletedAt?: string | null;
 }
@@ -192,6 +212,7 @@ export interface OwnerWithdrawal {
   date: string;
   reason: string;
   drawerSessionId?: string | null;
+  createdBy?: string | null;
   createdAt: string;
   deletedAt?: string | null;
 }
@@ -239,6 +260,8 @@ export interface DrawerSession {
   walletTotal: number;
   instapayTotal: number;
   closingNotes?: string;
+  openedByName?: string;
+  closedByName?: string;
   reopenedAt?: string | null;
   reopenedBy?: string | null;
 }
@@ -248,6 +271,9 @@ export interface AuditLog {
   action: string;
   tableName: string;
   details: string;
+  changedBy?: string | null;
+  actorName?: string;
+  actorRole?: string;
   createdAt: string;
 }
 
@@ -258,10 +284,16 @@ export interface ActionResult {
 
 interface ShopContextType {
   shopId: string | null;
+  userId: string | null;
   shopName: string;
   ownerName: string;
+  currentUserName: string;
   userEmail: string | null;
-  userRole: string;
+  userRole: RoleKey;
+  permissions: Record<PermissionKey, boolean>;
+  can: (permission: PermissionKey) => boolean;
+  sessionTimeoutMinutes: number;
+  updateSessionTimeout: (minutes: number) => Promise<ActionResult>;
   isSupabaseConfigured: boolean;
   cloudStatus: 'connected' | 'error' | 'offline';
   cloudError: string | null;
@@ -272,7 +304,7 @@ interface ShopContextType {
   isAuthChecking: boolean;
   isAuthenticated: boolean;
   refreshFromCloud: () => Promise<boolean>;
-  signOut: () => Promise<void>;
+  signOut: (reason?: string) => Promise<void>;
   products: Product[];
   customers: Customer[];
   suppliers: Supplier[];
@@ -543,7 +575,13 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const [shopId, setShopId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string>('owner');
+  const [userRole, setUserRole] = useState<RoleKey>('admin');
+  const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>(() =>
+    resolveEffectivePermissions({ role: 'admin' })
+  );
+  const [currentUserName, setCurrentUserName] = useState('كريم');
+  const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number>(120);
+  const lastActivityRef = useRef<number>(Date.now());
   const [shopName, setShopName] = useState('محل شفرة');
   const [ownerName, setOwnerName] = useState('كريم');
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(Boolean(supabase));
@@ -551,6 +589,11 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const can = useCallback(
+    (perm: PermissionKey) => hasPermission(permissions, perm),
+    [permissions]
+  );
 
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -594,18 +637,48 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     setAuditLogs([]);
   }, []);
 
+  const signOut = useCallback(async (reason?: string) => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    clearShopState();
+    setUserId(null);
+    setUserEmail(null);
+    setIsAuthenticated(false);
+    const target =
+      reason === 'deactivated'
+        ? '/login?deactivated=1'
+        : reason === 'timeout'
+        ? '/login?timeout=1'
+        : '/login';
+    router.replace(target);
+  }, [supabase, clearShopState, router]);
+
   const hydrateFromSupabase = useCallback(
     async (uid: string, email?: string | null, opts?: { silent?: boolean }): Promise<boolean> => {
       if (!supabase) return false;
       if (!opts?.silent) setIsAuthChecking(true);
       try {
         const result = await loadShopDataFromSupabase(supabase, uid);
+        if (result.deactivated) {
+          errorToast(result.error || 'تم إيقاف هذا الحساب من قِبل مدير النظام');
+          await supabase.auth.signOut();
+          clearShopState();
+          setUserId(null);
+          setUserEmail(null);
+          setIsAuthenticated(false);
+          router.replace('/login?deactivated=1');
+          return false;
+        }
         if (result.payload) {
           const p = result.payload;
           setShopId(p.shopId);
           setShopName(p.shopName);
           setOwnerName(p.ownerName);
+          setCurrentUserName(p.currentUserName);
           setUserRole(p.userRole);
+          setPermissions(p.permissions);
+          setSessionTimeoutMinutes(p.sessionTimeoutMinutes || 120);
           setUserEmail(email || null);
           setCloudError(null);
           setProducts(p.products);
@@ -636,13 +709,49 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         if (!opts?.silent) setIsAuthChecking(false);
       }
     },
-    [supabase]
+    [supabase, clearShopState, router, errorToast]
   );
 
   const refreshFromCloud = useCallback(async (): Promise<boolean> => {
     if (!supabase || !userId) return false;
     return hydrateFromSupabase(userId, userEmail, { silent: true });
   }, [supabase, userId, userEmail, hydrateFromSupabase]);
+
+  // التحقق من مهلة الجلسة وحالة تفعيل الحساب بشكل دوري عند تفعيل Supabase
+  useEffect(() => {
+    if (!supabase || !isAuthenticated || !userId) return;
+
+    const bumpActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
+    lastActivityRef.current = Date.now();
+
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach((ev) => window.addEventListener(ev, bumpActivity, { passive: true }));
+
+    const interval = setInterval(async () => {
+      if (isSessionTimedOut(lastActivityRef.current, sessionTimeoutMinutes)) {
+        errorToast('انتهت مهلة الجلسة بسبب عدم النشاط، يرجى تسجيل الدخول مرة أخرى');
+        await signOut('timeout');
+        return;
+      }
+      // التحقق الفوري من حالة التفعيل على الخادم
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('id', userId)
+        .maybeSingle();
+      if (prof && prof.is_active === false) {
+        errorToast('تم إيقاف هذا الحساب من قِبل مدير النظام');
+        await signOut('deactivated');
+      }
+    }, 30000);
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, bumpActivity));
+      clearInterval(interval);
+    };
+  }, [supabase, isAuthenticated, userId, sessionTimeoutMinutes, signOut, errorToast]);
 
   // التحقق من جلسة Supabase وتحميل بيانات المتجر المعزول
   useEffect(() => {
@@ -739,15 +848,15 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     };
   }, [supabase, clearShopState, hydrateFromSupabase]);
 
-  // توجيه غير المسجلين إلى صفحة الدخول عند تفعيل Supabase
+  // توجيه غير المسجلين إلى صفحة الدخول، والمسجلين إلى الصفحة الافتراضية المسموحة لدورهم
   useEffect(() => {
     if (!supabase || isAuthChecking) return;
-    if (!isAuthenticated && pathname !== '/login') {
+    if (!isAuthenticated && pathname !== '/login' && pathname !== '/auth/callback') {
       router.replace('/login');
     } else if (isAuthenticated && pathname === '/login') {
-      router.replace('/');
+      router.replace(getDefaultHomeRoute(permissions));
     }
-  }, [supabase, isAuthChecking, isAuthenticated, pathname, router]);
+  }, [supabase, isAuthChecking, isAuthenticated, pathname, router, permissions]);
 
   // حفظ البيانات تلقائياً في التخزين المحلي فقط عند العمل دون Supabase
   useEffect(() => {
@@ -790,16 +899,45 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     auditLogs,
   ]);
 
-  const signOut = useCallback(async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
+  const denyIfUnauthorized = (perm: PermissionKey): ActionResult | null => {
+    if (!can(perm)) {
+      const msg = 'غير مصرح لك بتنفيذ هذا الإجراء حسب صلاحيات حسابك';
+      errorToast(msg);
+      return { ok: false, error: msg };
     }
-    clearShopState();
-    setUserId(null);
-    setUserEmail(null);
-    setIsAuthenticated(false);
-    router.replace('/login');
-  }, [supabase, clearShopState, router]);
+    return null;
+  };
+
+  const updateSessionTimeout = async (minutes: number): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('settings.manage');
+    if (denied) return denied;
+    const safeMinutes = Math.max(5, Math.min(1440, Math.round(minutes || 120)));
+    if (!supabase) {
+      setSessionTimeoutMinutes(safeMinutes);
+      successToast(`تم تحديث مهلة الجلسة إلى ${safeMinutes} دقيقة`);
+      return { ok: true };
+    }
+    try {
+      const res = await fetch('/api/settings/security', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionTimeoutMinutes: safeMinutes }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        errorToast(json.error || 'تعذر حفظ مهلة الجلسة');
+        return { ok: false, error: json.error || 'تعذر حفظ مهلة الجلسة' };
+      }
+      setSessionTimeoutMinutes(safeMinutes);
+      await refreshFromCloud();
+      successToast(`تم تحديث مهلة الجلسة إلى ${safeMinutes} دقيقة`);
+      return { ok: true };
+    } catch (err: any) {
+      const msg = err?.message || 'تعذر الاتصال بالخادم';
+      errorToast(msg);
+      return { ok: false, error: msg };
+    }
+  };
 
   // تنفيذ حقيقي ومؤكد لعمليات الكتابة في Supabase مع إعادة القراءة وإشعارات التوست
   const runSupabaseWrite = useCallback(
@@ -857,6 +995,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       action,
       new_data: { details },
       changed_by: uId,
+      actor_name: currentUserName,
+      actor_role: userRole,
     });
   };
 
@@ -866,15 +1006,20 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       action,
       tableName,
       details,
+      changedBy: userId || 'local-user',
+      actorName: currentUserName,
+      actorRole: userRole,
       createdAt: new Date().toISOString(),
     };
-    setAuditLogs((prev) => [newLog, ...prev.slice(0, 99)]);
+    setAuditLogs((prev) => [newLog, ...prev.slice(0, 299)]);
   };
 
   // 1. المنتجات
   const addProduct = async (
     data: Omit<Product, 'id' | 'createdAt' | 'currentStock'>
   ): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('products.create');
+    if (denied) return denied;
     const prodId = generateUuid();
     const newProduct: Product = {
       ...data,
@@ -918,6 +1063,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('products.edit');
+    if (denied) return denied;
     if (!supabase) {
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
       pushLocalAudit('UPDATE', 'products', `تعديل بيانات المنتج معرف: ${id}`);
@@ -950,6 +1097,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteProduct = async (id: string): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('products.delete');
+    if (denied) return denied;
     const deletedAt = new Date().toISOString();
     if (!supabase) {
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, deletedAt } : p)));
@@ -976,6 +1125,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const addCustomer = async (
     data: Omit<Customer, 'id' | 'createdAt' | 'currentBalance'> & { initialBalance?: number }
   ): Promise<ActionResult & { customer?: Customer }> => {
+    const denied = denyIfUnauthorized('customers.create');
+    if (denied) return denied;
     const custId = generateUuid();
     const newCustomer: Customer = {
       id: custId,
@@ -1017,6 +1168,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateCustomer = async (id: string, updates: Partial<Customer>): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('customers.edit');
+    if (denied) return denied;
     if (!supabase) {
       setCustomers((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
       return { ok: true };
@@ -1042,6 +1195,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     method: 'cash' | 'wallet' | 'instapay',
     notes?: string
   ): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('customers.collect_payment');
+    if (denied) return denied;
     const targetCust = customers.find((c) => c.id === customerId);
     const updatedBal = targetCust
       ? Number(Math.max(0, targetCust.currentBalance - amount).toFixed(2))
@@ -1144,6 +1299,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const addSupplier = async (
     data: Omit<Supplier, 'id' | 'createdAt' | 'owedBalance'> & { initialBalance?: number }
   ): Promise<ActionResult & { supplier?: Supplier }> => {
+    const denied = denyIfUnauthorized('suppliers.manage');
+    if (denied) return denied;
     const suppId = generateUuid();
     const newSupplier: Supplier = {
       id: suppId,
@@ -1213,6 +1370,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     methodArg?: 'cash' | 'wallet' | 'instapay' | 'bank',
     notesArg?: string
   ): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('suppliers.manage');
+    if (denied) return denied;
     let targetSupplierId: string;
     let amount: number;
     let method: 'cash' | 'wallet' | 'instapay' | 'bank';
@@ -1312,6 +1471,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           notes: notes || null,
           drawer_session_id: activeDrawerId,
           created_by: uId,
+          created_by_name: currentUserName,
         }),
         'تسجيل سداد المورد'
       );
@@ -1347,6 +1507,17 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     paidAmount: number;
     notes?: string;
   }): Promise<{ ok: boolean; invoice: SaleInvoice | null; warning?: string; error?: string }> => {
+    const denied = denyIfUnauthorized('pos.create');
+    if (denied) return { ok: false, invoice: null, error: denied.error };
+
+    const hasAnyDiscount =
+      (data.overallDiscount || 0) > 0 || data.items.some((i) => (i.discount || 0) > 0);
+    if (hasAnyDiscount && !can('pos.apply_discount')) {
+      const msg = 'لا تملك صلاحية تطبيق خصم على الفاتورة';
+      errorToast(msg);
+      return { ok: false, invoice: null, error: msg };
+    }
+
     if (!activeDrawer || activeDrawer.status !== 'open') {
       return {
         ok: false,
@@ -1423,6 +1594,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       drawerSessionId: activeDrawer.id,
       notes: data.notes || '',
       status: 'completed',
+      createdBy: userId,
+      createdByName: currentUserName,
       createdAt: new Date().toISOString(),
     };
 
@@ -1530,6 +1703,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           drawer_session_id: activeDrawerId,
           notes: newInvoice.notes || null,
           created_by: uId,
+          created_by_name: currentUserName,
         }),
         'حفظ رأس فاتورة البيع'
       );
@@ -1617,9 +1791,15 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     isSellable: boolean;
     reason: string;
   }): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('sales.process_return');
+    if (denied) return denied;
+
     const invoice = salesInvoices.find((inv) => inv.id === data.invoiceId);
     if (!invoice) {
       return { ok: false, error: 'الفاتورة غير موجودة.' };
+    }
+    if (!can('sales.view_all') && invoice.createdBy && invoice.createdBy !== userId) {
+      return { ok: false, error: 'غير مصرح لك بإرجاع فواتير تخص مستخدمين آخرين.' };
     }
     const lineItem = invoice.items.find((it) => it.id === data.invoiceItemId);
     if (!lineItem) {
@@ -1786,6 +1966,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     invoicePhotoUrl?: string | null;
     notes?: string;
   }): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('suppliers.manage');
+    if (denied) return denied;
     let total = 0;
     const processedItems: PurchaseInvoiceItem[] = [];
     const newlyCreatedProducts: Product[] = [];
@@ -2009,6 +2191,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           invoice_photo_url: uploadedPhotoUrl,
           notes: data.notes || null,
           created_by: uId,
+          created_by_name: currentUserName,
         }),
         'حفظ رأس فاتورة التوريد'
       );
@@ -2092,6 +2275,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     date?: string;
     notes?: string;
   }): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('inventory.manage');
+    if (denied) return denied;
     const qty = Number(data.quantity.toFixed(2));
     let finalName = data.productName?.trim() || '';
     let finalUnitCost = data.unitCost || 0;
@@ -2157,6 +2342,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           notes: data.notes || null,
           damage_date: damageDate,
           created_by: uId,
+          created_by_name: currentUserName,
         }),
         'تسجيل بند الهالك'
       );
@@ -2174,6 +2360,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
   // 7. المصروفات
   const addExpense = async (data: Omit<Expense, 'id' | 'createdAt'>): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('expenses.create');
+    if (denied) return denied;
     const expId = generateUuid();
     const newExpense: Expense = {
       ...data,
@@ -2248,6 +2436,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           drawer_session_id: activeDrawerId,
           notes: data.notes || null,
           created_by: uId,
+          created_by_name: currentUserName,
         }),
         'تسجيل المصروف'
       );
@@ -2282,6 +2471,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const addOwnerWithdrawal = async (
     data: Omit<OwnerWithdrawal, 'id' | 'createdAt' | 'ownerName'>
   ): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('withdrawals.create');
+    if (denied) return denied;
     const wthId = generateUuid();
     const newWithdrawal: OwnerWithdrawal = {
       ...data,
@@ -2337,6 +2528,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           drawer_session_id: activeDrawerId,
           reason: data.reason || null,
           created_by: uId,
+          created_by_name: currentUserName,
         }),
         'تسجيل المسحوبات'
       );
@@ -2367,6 +2559,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     items: Array<{ productId: string; countedStock: number }>,
     notes?: string
   ): Promise<ActionResult & { countId?: string }> => {
+    const denied = denyIfUnauthorized('inventory.manage');
+    if (denied) return denied;
     let totalVarCost = 0;
     const processedItems: PhysicalCountItem[] = [];
 
@@ -2456,6 +2650,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   };
 
   const approvePhysicalCount = async (countId: string): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('inventory.manage');
+    if (denied) return denied;
     const count = physicalCounts.find((c) => c.id === countId);
     if (!count) return { ok: false, error: 'الجرد غير موجود' };
     const approvedAt = new Date().toISOString();
@@ -2509,6 +2705,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
   // 10. الدرج اليومي
   const openNewDrawerSession = async (openingCash: number): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('drawer.open_close');
+    if (denied) return denied;
     const drawerId = generateUuid();
     const openedAt = new Date().toISOString();
     const newSession: DrawerSession = {
@@ -2550,6 +2748,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           opening_cash: newSession.openingCash,
           expected_cash: newSession.expectedCash,
           opened_by: uId,
+          opened_by_name: currentUserName,
         }),
         'فتح جلسة الدرج'
       );
@@ -2571,6 +2770,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     actualCash: number,
     closingNotes?: string
   ): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('drawer.open_close');
+    if (denied) return denied;
     if (!activeDrawer) return { ok: false, error: 'لا توجد وردية درج مفتوحة لإغلاقها' };
 
     const actual = Number(actualCash.toFixed(2));
@@ -2625,6 +2826,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
             difference,
             closing_notes: closingNotes || null,
             closed_by: uId,
+            closed_by_name: currentUserName,
           })
           .eq('id', targetId)
           .eq('shop_id', sId),
@@ -2645,6 +2847,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   };
 
   const reopenDrawerSession = async (sessionId?: string): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('drawer.reopen');
+    if (denied) return denied;
     const timestamp = new Date().toISOString();
     const formattedTime = new Date().toLocaleTimeString('ar-EG', {
       hour: '2-digit',
@@ -2685,6 +2889,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
             status: 'open',
             reopened_at: timestamp,
             reopened_by: uId,
+            reopened_by_name: currentUserName,
             closed_at: null,
           })
           .eq('id', targetId)
@@ -2707,6 +2912,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
   // 11. استيراد الإكسيل
   const importDataFromExcel = async (type: string, data: any[]): Promise<ActionResult> => {
+    const denied = denyIfUnauthorized('import.execute');
+    if (denied) return denied;
     if (type === 'products') {
       const normalized = data.map((d) => ({ ...d, id: generateUuid() }));
       if (!supabase) {
@@ -2902,17 +3109,18 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
   // 12. النسخ الاحتياطي
   const exportDatabaseJSON = () => {
+    const canSeeCostProfit = can('finance.view_cost_profit');
     const data = {
       version: '1.0',
       exportDate: new Date().toISOString(),
       shopName,
       ownerName,
-      products,
+      products: sanitizeExportDataByPermission(products, canSeeCostProfit),
       customers,
       suppliers,
       supplierPayments,
-      damagedItems,
-      salesInvoices,
+      damagedItems: canSeeCostProfit ? damagedItems : [],
+      salesInvoices: sanitizeExportDataByPermission(salesInvoices, canSeeCostProfit),
       salesReturns,
       purchaseInvoices,
       expenses,
@@ -2969,10 +3177,16 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     <ShopContext.Provider
       value={{
         shopId,
+        userId,
         shopName,
         ownerName,
+        currentUserName,
         userEmail,
         userRole,
+        permissions,
+        can,
+        sessionTimeoutMinutes,
+        updateSessionTimeout,
         isSupabaseConfigured,
         cloudStatus,
         cloudError,

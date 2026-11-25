@@ -18,6 +18,7 @@ import { useShop, Product } from '@/lib/store/shop-store';
 import { Button, SaveButtonState } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
 import { PosSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/motion/toast-provider';
@@ -51,6 +52,7 @@ export default function NewSalePage() {
     drawerSessions,
     reopenDrawerSession,
     addCustomer,
+    can,
     isInitialLoading,
   } = useShop();
   const { successToast } = useToast();
@@ -299,16 +301,22 @@ export default function NewSalePage() {
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant="danger"
-            size="md"
-            onClick={() => reopenDrawerSession(lastClosedSession?.id)}
-            className="gap-2 shrink-0 font-bold w-full sm:w-auto"
-          >
-            <RotateCcw strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
-            <span>إعادة فتح الدرج (صلاحية المالك كريم)</span>
-          </Button>
+          {can('drawer.reopen') ? (
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              onClick={() => reopenDrawerSession(lastClosedSession?.id)}
+              className="gap-2 shrink-0 font-bold w-full sm:w-auto"
+            >
+              <RotateCcw strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
+              <span>إعادة فتح الدرج</span>
+            </Button>
+          ) : (
+            <Badge variant="danger" className="shrink-0">
+              صلاحية إعادة فتح الدرج للمدير فقط
+            </Badge>
+          )}
         </div>
       )}
 
@@ -406,17 +414,19 @@ export default function NewSalePage() {
                     <User strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5 text-ink-muted" />
                     <span>العميل</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddCustError('');
-                      setIsAddCustomerOpen(true);
-                    }}
-                    className="text-xs font-bold text-truffle dark:text-flame flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-flame/20 transition-colors"
-                  >
-                    <UserPlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                    <span>+ إضافة عميل سريعاً</span>
-                  </button>
+                  {can('customers.create') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddCustError('');
+                        setIsAddCustomerOpen(true);
+                      }}
+                      className="text-xs font-bold text-truffle dark:text-flame flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-flame/20 transition-colors"
+                    >
+                      <UserPlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                      <span>+ إضافة عميل سريعاً</span>
+                    </button>
+                  )}
                 </div>
                 <select
                   value={selectedCustomerId}
@@ -571,13 +581,19 @@ export default function NewSalePage() {
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-divider">
                 <div>
                   <label className="text-[11px] font-bold text-ink">خصم إضافي (ج.م)</label>
-                  <input
-                    type="number"
-                    value={overallDiscount || ''}
-                    placeholder="0"
-                    onChange={(e) => setOverallDiscount(parseFloat(e.target.value) || 0)}
-                    className="w-full h-9 px-2 text-xs border border-line bg-surface text-ink-strong rounded-lg focus:outline-none focus:border-flame"
-                  />
+                  {can('pos.apply_discount') ? (
+                    <input
+                      type="number"
+                      value={overallDiscount || ''}
+                      placeholder="0"
+                      onChange={(e) => setOverallDiscount(parseFloat(e.target.value) || 0)}
+                      className="w-full h-9 px-2 text-xs border border-line bg-surface text-ink-strong rounded-lg focus:outline-none focus:border-flame"
+                    />
+                  ) : (
+                    <div className="w-full h-9 px-2 text-[11px] border border-line bg-surface-alt text-ink-muted rounded-lg flex items-center">
+                      الخصم غير مصرح به
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-ink">المبلغ المدفوع (ج.م)</label>

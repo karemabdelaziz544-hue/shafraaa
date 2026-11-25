@@ -17,7 +17,7 @@ import { formatCurrency, formatArabicDate } from '@/lib/formatters';
 import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function ExpensesPage() {
-  const { expenses, addExpense, isInitialLoading } = useShop();
+  const { expenses, addExpense, can, isInitialLoading } = useShop();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'fixed' | 'variable'>('all');
@@ -98,10 +98,12 @@ export default function ExpensesPage() {
           </p>
         </div>
 
-        <Button variant="primary" size="md" onClick={() => setIsAddModalOpen(true)}>
-          <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
-          <span>تسجيل مصروف جديد</span>
-        </Button>
+        {can('expenses.create') && (
+          <Button variant="primary" size="md" onClick={() => setIsAddModalOpen(true)}>
+            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
+            <span>تسجيل مصروف جديد</span>
+          </Button>
+        )}
       </div>
 
       {/* بطاقات الإجماليات للشهر المحدد */}

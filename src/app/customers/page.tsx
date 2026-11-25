@@ -18,7 +18,7 @@ import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
 import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function CustomersPage() {
-  const { customers, salesInvoices, addCustomer, addCustomerPayment, isInitialLoading } = useShop();
+  const { customers, salesInvoices, addCustomer, addCustomerPayment, can, isInitialLoading } = useShop();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -97,10 +97,12 @@ export default function CustomersPage() {
           </p>
         </div>
 
-        <Button variant="primary" size="md" onClick={() => setIsAddModalOpen(true)}>
-          <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
-          <span>إضافة عميل جديد</span>
-        </Button>
+        {can('customers.create') && (
+          <Button variant="primary" size="md" onClick={() => setIsAddModalOpen(true)}>
+            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
+            <span>إضافة عميل جديد</span>
+          </Button>
+        )}
       </div>
 
       {/* البحث */}
@@ -168,7 +170,7 @@ export default function CustomersPage() {
                       </td>
                       <td className="p-3 sm:p-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          {c.currentBalance > 0 && (
+                          {c.currentBalance > 0 && can('customers.collect_payment') && (
                             <Button
                               variant="outline"
                               size="sm"

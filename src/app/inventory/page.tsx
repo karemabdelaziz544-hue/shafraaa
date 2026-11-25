@@ -27,8 +27,10 @@ export default function InventoryPage() {
     physicalCounts,
     savePhysicalCountDraft,
     approvePhysicalCount,
+    can,
     isInitialLoading,
   } = useShop();
+  const canViewCost = can('finance.view_cost_profit');
 
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   const [countItems, setCountItems] = useState<Record<string, number>>({});
@@ -78,10 +80,12 @@ export default function InventoryPage() {
           </p>
         </div>
 
-        <Button variant="primary" size="md" onClick={handleOpenNewCount}>
-          <ClipboardCheck strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
-          <span>بدء جرد فعلي جديد</span>
-        </Button>
+        {can('inventory.manage') && (
+          <Button variant="primary" size="md" onClick={handleOpenNewCount}>
+            <ClipboardCheck strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
+            <span>بدء جرد فعلي جديد</span>
+          </Button>
+        )}
       </div>
 
       {/* التبديل بين شاشات قسم المخزون */}
@@ -105,20 +109,22 @@ export default function InventoryPage() {
 
       {/* بطاقات الإحصاءات المخزنية */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-abyssal to-fantastic text-palladian border-abyssal">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-oatmeal">إجمالي قيمة البضاعة (بالتكلفة)</span>
-              <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-flame">
-              {formatCurrency(totalStockCostValue)}
-            </div>
-            <p className="text-xs text-oatmeal mt-1">
-              رأس مالك المربوط في البضاعة حاليًا
-            </p>
-          </CardContent>
-        </Card>
+        {canViewCost && (
+          <Card className="bg-gradient-to-br from-abyssal to-fantastic text-palladian border-abyssal">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-oatmeal">إجمالي قيمة البضاعة (بالتكلفة)</span>
+                <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-flame">
+                {formatCurrency(totalStockCostValue)}
+              </div>
+              <p className="text-xs text-oatmeal mt-1">
+                رأس مالك المربوط في البضاعة حاليًا
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-5">
@@ -167,8 +173,8 @@ export default function InventoryPage() {
                   <th className="p-3 sm:p-4">القسم</th>
                   <th className="p-3 sm:p-4">رصيد أول المدة</th>
                   <th className="p-3 sm:p-4">الرصيد الحالي</th>
-                  <th className="p-3 sm:p-4">سعر التكلفة</th>
-                  <th className="p-3 sm:p-4">قيمة الرصيد بالتكلفة</th>
+                  {canViewCost && <th className="p-3 sm:p-4">سعر التكلفة</th>}
+                  {canViewCost && <th className="p-3 sm:p-4">قيمة الرصيد بالتكلفة</th>}
                   <th className="p-3 sm:p-4">الحالة</th>
                 </tr>
               </thead>
@@ -191,10 +197,14 @@ export default function InventoryPage() {
                       <td className="p-3 sm:p-4 font-mono font-black text-ink-strong">
                         {p.currentStock} {p.unit}
                       </td>
-                      <td className="p-3 sm:p-4 font-mono text-ink">{formatCurrency(totalCost)}</td>
-                      <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
-                        {formatCurrency(valueAtCost)}
-                      </td>
+                      {canViewCost && (
+                        <td className="p-3 sm:p-4 font-mono text-ink">{formatCurrency(totalCost)}</td>
+                      )}
+                      {canViewCost && (
+                        <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
+                          {formatCurrency(valueAtCost)}
+                        </td>
+                      )}
                       <td className="p-3 sm:p-4">
                         {isLow ? (
                           <Badge variant="danger">أقل من حد الطلب ({p.minStockAlert})</Badge>
@@ -246,22 +256,24 @@ export default function InventoryPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="text-left">
-                      <span className="text-[11px] text-ink-muted block">تكلفة فارق الجرد:</span>
-                      <span
-                        className={`font-black text-sm ${
-                          count.totalVarianceCost < 0
-                            ? 'text-danger-text'
-                            : count.totalVarianceCost > 0
-                            ? 'text-success'
-                            : 'text-ink-strong'
-                        }`}
-                      >
-                        {formatCurrency(count.totalVarianceCost)}
-                      </span>
-                    </div>
+                    {canViewCost && (
+                      <div className="text-left">
+                        <span className="text-[11px] text-ink-muted block">تكلفة فارق الجرد:</span>
+                        <span
+                          className={`font-black text-sm ${
+                            count.totalVarianceCost < 0
+                              ? 'text-danger-text'
+                              : count.totalVarianceCost > 0
+                              ? 'text-success'
+                              : 'text-ink-strong'
+                          }`}
+                        >
+                          {formatCurrency(count.totalVarianceCost)}
+                        </span>
+                      </div>
+                    )}
 
-                    {count.status === 'draft' && (
+                    {count.status === 'draft' && can('inventory.manage') && (
                       <Button
                         variant="success"
                         size="sm"

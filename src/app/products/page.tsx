@@ -39,7 +39,8 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter');
 
-  const { products, addProduct, updateProduct, deleteProduct, isInitialLoading } = useShop();
+  const { products, addProduct, updateProduct, deleteProduct, can, isInitialLoading } = useShop();
+  const canViewCost = can('finance.view_cost_profit');
   const [productSaveState, setProductSaveState] = useState<SaveButtonState>('idle');
   const saveLockRef = useRef(false);
 
@@ -245,10 +246,12 @@ function ProductsContent() {
             <span>بحث بالكاميرا</span>
           </Button>
 
-          <Button variant="primary" size="md" onClick={handleOpenAdd}>
-            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
-            <span>إضافة صنف جديد</span>
-          </Button>
+          {can('products.create') && (
+            <Button variant="primary" size="md" onClick={handleOpenAdd}>
+              <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
+              <span>إضافة صنف جديد</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -318,9 +321,9 @@ function ProductsContent() {
                   </th>
                   <th className="p-3 sm:p-4">الصنف والباركود</th>
                   <th className="p-3 sm:p-4">القسم</th>
-                  <th className="p-3 sm:p-4">التكلفة الإجمالية</th>
+                  {canViewCost && <th className="p-3 sm:p-4">التكلفة الإجمالية</th>}
                   <th className="p-3 sm:p-4">سعر البيع</th>
-                  <th className="p-3 sm:p-4">هامش الربح</th>
+                  {canViewCost && <th className="p-3 sm:p-4">هامش الربح</th>}
                   <th className="p-3 sm:p-4">المخزون الحالي</th>
                   <th className="p-3 sm:p-4 text-center">إجراءات وطباعة</th>
                 </tr>
@@ -358,25 +361,29 @@ function ProductsContent() {
                           {p.category || 'عام'}
                         </Badge>
                       </td>
-                      <td className="p-3 sm:p-4 font-mono font-medium text-ink">
-                        {formatCurrency(totalCost)}
-                      </td>
+                      {canViewCost && (
+                        <td className="p-3 sm:p-4 font-mono font-medium text-ink">
+                          {formatCurrency(totalCost)}
+                        </td>
+                      )}
                       <td className="p-3 sm:p-4 font-mono font-bold text-truffle dark:text-flame">
                         {formatCurrency(p.salePrice)}
                       </td>
-                      <td className="p-3 sm:p-4">
-                        <span
-                          className={`font-bold font-mono ${
-                            margin >= 20
-                              ? 'text-success'
-                              : margin > 0
-                              ? 'text-warning'
-                              : 'text-danger-text'
-                          }`}
-                        >
-                          {formatPercent(margin)}
-                        </span>
-                      </td>
+                      {canViewCost && (
+                        <td className="p-3 sm:p-4">
+                          <span
+                            className={`font-bold font-mono ${
+                              margin >= 20
+                                ? 'text-success'
+                                : margin > 0
+                                ? 'text-warning'
+                                : 'text-danger-text'
+                            }`}
+                          >
+                            {formatPercent(margin)}
+                          </span>
+                        </td>
+                      )}
                       <td className="p-3 sm:p-4">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-ink-strong">
@@ -402,26 +409,30 @@ function ProductsContent() {
                             <span>استيكر</span>
                           </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEdit(p)}
-                            title="تعديل"
-                          >
-                            <Edit strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-ink" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm(`هل أنت متأكد من حذف المنتج: ${p.name}؟`)) {
-                                deleteProduct(p.id);
-                              }
-                            }}
-                            title="حذف"
-                          >
-                            <Trash2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-danger-text" />
-                          </Button>
+                          {can('products.edit') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenEdit(p)}
+                              title="تعديل"
+                            >
+                              <Edit strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-ink" />
+                            </Button>
+                          )}
+                          {can('products.delete') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`هل أنت متأكد من حذف المنتج: ${p.name}؟`)) {
+                                  deleteProduct(p.id);
+                                }
+                              }}
+                              title="حذف"
+                            >
+                              <Trash2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 text-danger-text" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -503,39 +514,43 @@ function ProductsContent() {
               />
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-ink block mb-1">
-                سعر الشراء / التكلفة (ج.م) <span className="text-danger-text">*</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                value={formData.costPrice || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })
-                }
-                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl font-bold focus:outline-none focus:border-flame"
-              />
-            </div>
+            {canViewCost && (
+              <>
+                <div>
+                  <label className="text-xs font-bold text-ink block mb-1">
+                    سعر الشراء / التكلفة (ج.م) <span className="text-danger-text">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={formData.costPrice || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })
+                    }
+                    className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl font-bold focus:outline-none focus:border-flame"
+                  />
+                </div>
 
-            <div>
-              <label className="text-xs font-bold text-ink block mb-1">
-                مصاريف إضافية / شحن (ج.م)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.extraCost || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, extraCost: parseFloat(e.target.value) || 0 })
-                }
-                placeholder="0"
-                className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
-              />
-            </div>
+                <div>
+                  <label className="text-xs font-bold text-ink block mb-1">
+                    مصاريف إضافية / شحن (ج.م)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.extraCost || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, extraCost: parseFloat(e.target.value) || 0 })
+                    }
+                    placeholder="0"
+                    className="w-full h-11 px-3 text-sm border border-line bg-surface text-ink-strong rounded-xl focus:outline-none focus:border-flame"
+                  />
+                </div>
+              </>
+            )}
 
             <div>
               <label className="text-xs font-bold text-ink block mb-1">
@@ -554,15 +569,17 @@ function ProductsContent() {
               />
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-ink block mb-1">هامش الربح المحسوب</label>
-              <div className="h-11 px-3 rounded-xl bg-surface-alt border border-line flex items-center justify-between font-mono font-bold text-sm text-ink-strong">
-                <span>{formatPercent(liveMargin)}</span>
-                <span className="text-xs text-ink-muted font-sans">
-                  ربح: {formatCurrency(Math.max(0, formData.salePrice - (formData.costPrice + formData.extraCost)))}
-                </span>
+            {canViewCost && (
+              <div>
+                <label className="text-xs font-bold text-ink block mb-1">هامش الربح المحسوب</label>
+                <div className="h-11 px-3 rounded-xl bg-surface-alt border border-line flex items-center justify-between font-mono font-bold text-sm text-ink-strong">
+                  <span>{formatPercent(liveMargin)}</span>
+                  <span className="text-xs text-ink-muted font-sans">
+                    ربح: {formatCurrency(Math.max(0, formData.salePrice - (formData.costPrice + formData.extraCost)))}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {!editingProduct && (
               <div>

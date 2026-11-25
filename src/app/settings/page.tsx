@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Sun,
   Moon,
+  Clock,
 } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
 import { useTheme } from '@/components/layout/theme-provider';
@@ -34,11 +35,25 @@ export default function SettingsPage() {
     exportDatabaseJSON,
     restoreDatabaseJSON,
     resetToSampleData,
+    can,
+    sessionTimeoutMinutes,
+    updateSessionTimeout,
   } = useShop();
   const { theme, setTheme } = useTheme();
 
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
   const [isCheckingCloud, setIsCheckingCloud] = useState(false);
+  const [timeoutInput, setTimeoutInput] = useState<number>(sessionTimeoutMinutes || 60);
+  const [isSavingTimeout, setIsSavingTimeout] = useState(false);
+  const [timeoutMsg, setTimeoutMsg] = useState<string | null>(null);
+
+  const handleSaveTimeout = async () => {
+    setIsSavingTimeout(true);
+    setTimeoutMsg(null);
+    const res = await updateSessionTimeout(timeoutInput);
+    setTimeoutMsg(res.ok ? 'تم تحديث مهلة إغلاق الجلسة بنجاح!' : res.error || 'تعذر تحديث المهلة');
+    setIsSavingTimeout(false);
+  };
 
   const handleDownloadBackup = () => {
     const jsonStr = exportDatabaseJSON();
@@ -267,6 +282,49 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* أمان الجلسة ومهلة عدم النشاط */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-truffle dark:text-flame" />
+            <span>أمان الجلسة والتسجيل التلقائي (Session Timeout)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-ink-muted leading-relaxed">
+            يتم تسجيل خروج المستخدم تلقائياً عند ترك النظام دون حركة أو نشاط لمدة تتجاوز المهلة المحددة لحماية بيانات المحل.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={timeoutInput}
+              disabled={!can('settings.manage')}
+              onChange={(e) => setTimeoutInput(parseInt(e.target.value, 10) || 60)}
+              className="h-10 px-3 text-sm border border-line rounded-xl bg-surface text-ink-strong font-bold focus:outline-none focus:border-flame disabled:opacity-60"
+            >
+              <option value={15}>15 دقيقة</option>
+              <option value={30}>30 دقيقة</option>
+              <option value={60}>ساعة واحدة (60 دقيقة)</option>
+              <option value={120}>ساعتان (120 دقيقة)</option>
+              <option value={240}>4 ساعات</option>
+              <option value={480}>8 ساعات (وردية كاملة)</option>
+            </select>
+            {can('settings.manage') && (
+              <Button
+                variant="primary"
+                size="md"
+                isLoading={isSavingTimeout}
+                onClick={() => void handleSaveTimeout()}
+              >
+                حفظ مهلة الجلسة
+              </Button>
+            )}
+          </div>
+          {timeoutMsg && (
+            <p className="text-xs font-bold text-success">{timeoutMsg}</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* إدارة النسخ الاحتياطي الكامل وقواعد البيانات */}
       <Card>
         <CardHeader>
@@ -281,12 +339,14 @@ export default function SettingsPage() {
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Button variant="primary" size="lg" onClick={handleDownloadBackup} className="gap-2">
-              <Download strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
-              <span>تنزيل نسخة احتياطية كاملة (JSON)</span>
-            </Button>
+            {can('export.data') && (
+              <Button variant="primary" size="lg" onClick={handleDownloadBackup} className="gap-2">
+                <Download strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
+                <span>تنزيل نسخة احتياطية كاملة (JSON)</span>
+              </Button>
+            )}
 
-            {!isSupabaseConfigured && (
+            {!isSupabaseConfigured && can('settings.manage') && (
               <>
                 <input
                   type="file"

@@ -22,7 +22,8 @@ import { formatCurrency } from '@/lib/formatters';
 import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function DamagedInventoryPage() {
-  const { products, damagedItems, addDamagedItem, isInitialLoading } = useShop();
+  const { products, damagedItems, addDamagedItem, can, isInitialLoading } = useShop();
+  const canViewCost = can('finance.view_cost_profit');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -141,10 +142,12 @@ export default function DamagedInventoryPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="danger" size="md" onClick={handleOpenAdd} className="gap-1.5 font-bold">
-            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
-            <span>تسجيل صنف هالك / تالف</span>
-          </Button>
+          {can('inventory.manage') && (
+            <Button variant="danger" size="md" onClick={handleOpenAdd} className="gap-1.5 font-bold">
+              <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
+              <span>تسجيل صنف هالك / تالف</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -169,20 +172,22 @@ export default function DamagedInventoryPage() {
 
       {/* بطاقات الإحصاءات الشهرية والتراكمية */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-truffle text-palladian border-truffle shadow-elevated">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-bold text-palladian/90">خسائر الهالك هذا الشهر (بالتكلفة)</span>
-              <TrendingDown strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-palladian">
-              {formatCurrency(thisMonthLosses)}
-            </div>
-            <p className="text-xs text-palladian/85 mt-1">
-              تخصم مباشرة من أرباح الفترة بقائمة الدخل
-            </p>
-          </CardContent>
-        </Card>
+        {canViewCost && (
+          <Card className="bg-truffle text-palladian border-truffle shadow-elevated">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-palladian/90">خسائر الهالك هذا الشهر (بالتكلفة)</span>
+                <TrendingDown strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-palladian">
+                {formatCurrency(thisMonthLosses)}
+              </div>
+              <p className="text-xs text-palladian/85 mt-1">
+                تخصم مباشرة من أرباح الفترة بقائمة الدخل
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-danger-border bg-danger-bg/60">
           <CardContent className="p-5">
@@ -401,7 +406,8 @@ export default function DamagedInventoryPage() {
               >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} (رصيد حالي: {p.currentStock} {p.unit} - تكلفة: {p.costPrice + p.extraCost} ج.م)
+                    {p.name} (رصيد حالي: {p.currentStock} {p.unit}
+                    {canViewCost ? ` - تكلفة: ${p.costPrice + p.extraCost} ج.م` : ''})
                   </option>
                 ))}
               </select>

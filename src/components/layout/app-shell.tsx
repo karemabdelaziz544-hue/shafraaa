@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
+import { canAccessRoute } from '@/lib/rbac';
 import { DesktopSidebar } from '@/components/layout/desktop-sidebar';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import { Header } from '@/components/layout/header';
@@ -20,18 +21,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     isAuthChecking,
     isAuthenticated,
     isSupabaseConfigured,
+    permissions,
     cloudError,
     syncError,
     clearSyncError,
     refreshFromCloud,
   } = useShop();
 
-  // تحميل استباقي خفيف للمسارات الرئيسية في الخلفية لسرعة التنقل على الهواتف
+  const routeAllowed = canAccessRoute(pathname, permissions);
+
+  // التحقق الفوري على مستوى الواجهة وإعادة التوجيه عند محاولة فتح مسار غير مصرح به
+  useEffect(() => {
+    if (isSupabaseConfigured && !isAuthChecking && isAuthenticated && !routeAllowed) {
+      router.replace('/no-permission');
+    }
+  }, [isAuthChecking, isAuthenticated, isSupabaseConfigured, routeAllowed, router]);
+
+  // تحميل استباقي خفيف للمسارات المصرح للمستخدم بفتحها فقط
   useEffect(() => {
     if (!isAuthenticated || pathname === '/login') return;
     const runPrefetch = () => {
       PREFETCH_ROUTES.forEach((route) => {
-        if (route !== pathname) {
+        if (route !== pathname && canAccessRoute(route, permissions)) {
           router.prefetch(route);
         }
       });
@@ -47,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     const timer = setTimeout(runPrefetch, 450);
     return () => clearTimeout(timer);
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, pathname, permissions, router]);
 
   if (pathname === '/login') {
     return (
@@ -60,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (isSupabaseConfigured && (isAuthChecking || !isAuthenticated)) {
+  if (isSupabaseConfigured && (isAuthChecking || !isAuthenticated || !routeAllowed)) {
     return (
       <>
         <TopProgressBar />

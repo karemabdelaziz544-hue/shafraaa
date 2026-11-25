@@ -7,6 +7,8 @@ import { AnimatePresence, m } from 'framer-motion';
 import { Home, ShoppingCart, Package, Vault, Menu, X } from 'lucide-react';
 import { cn } from '@/components/ui/button';
 import { NAV_ITEMS } from './desktop-sidebar';
+import { useShop } from '@/lib/store/shop-store';
+import type { PermissionKey } from '@/lib/rbac';
 import {
   MODAL_BACKDROP_TRANSITION,
   MOTION_DISTANCES,
@@ -17,15 +19,24 @@ import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const { can } = useShop();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
-  // الأزرار الـ 4 الرئيسية على الموبايل + زر المزيد
-  const quickNav = [
-    { href: '/', label: 'الرئيسية', icon: Home },
-    { href: '/sales/new', label: 'بيع جديد', icon: ShoppingCart, highlight: true },
-    { href: '/products', label: 'المنتجات', icon: Package },
-    { href: '/drawer', label: 'الدرج', icon: Vault },
+  const quickNav: Array<{
+    href: string;
+    label: string;
+    icon: typeof Home;
+    permission: PermissionKey;
+    highlight?: boolean;
+  }> = [
+    { href: '/', label: 'الرئيسية', icon: Home, permission: 'dashboard.view' },
+    { href: '/sales/new', label: 'بيع جديد', icon: ShoppingCart, permission: 'pos.view', highlight: true },
+    { href: '/products', label: 'المنتجات', icon: Package, permission: 'products.view' },
+    { href: '/drawer', label: 'الدرج', icon: Vault, permission: 'drawer.view' },
   ];
+
+  const visibleQuickNav = quickNav.filter((item) => can(item.permission));
+  const visibleAllNav = NAV_ITEMS.filter((item) => can(item.permission));
 
   return (
     <>
@@ -54,7 +65,7 @@ export function MobileBottomNav() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-divider">
-                <h3 className="font-bold text-ink-strong text-base">جميع أقسام المحل</h3>
+                <h3 className="font-bold text-ink-strong text-base">الأقسام المتاحة لك</h3>
                 <button
                   type="button"
                   onClick={() => setIsMoreMenuOpen(false)}
@@ -65,7 +76,7 @@ export function MobileBottomNav() {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2 pb-6">
-                {NAV_ITEMS.map((item) => {
+                {visibleAllNav.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   return (
@@ -100,7 +111,7 @@ export function MobileBottomNav() {
 
       {/* الشريط السفلي الثابت لشاشات الهواتف */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-surface/95 backdrop-blur-md border-t border-line shadow-elevated px-2 py-1 flex items-center justify-around h-16 select-none no-print">
-        {quickNav.map((item) => {
+        {visibleQuickNav.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 

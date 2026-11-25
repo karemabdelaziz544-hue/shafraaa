@@ -47,6 +47,7 @@ export default function SuppliersPage() {
     addSupplier,
     addSupplierPayment,
     createPurchaseInvoice,
+    can,
     isInitialLoading,
   } = useShop();
 
@@ -359,10 +360,12 @@ export default function SuppliersPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="primary" size="md" onClick={() => setIsAddSupplierOpen(true)}>
-            <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
-            <span>إضافة مورد جديد</span>
-          </Button>
+          {can('suppliers.manage') && (
+            <Button variant="primary" size="md" onClick={() => setIsAddSupplierOpen(true)}>
+              <Plus strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
+              <span>إضافة مورد جديد</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -466,25 +469,29 @@ export default function SuppliersPage() {
                             <span>كشف الحساب</span>
                           </Button>
 
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => openPurchaseModal(s)}
-                            className="text-xs gap-1"
-                          >
-                            <PackagePlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                            <span>فاتورة توريد</span>
-                          </Button>
+                          {can('suppliers.manage') && (
+                            <>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => openPurchaseModal(s)}
+                                className="text-xs gap-1"
+                              >
+                                <PackagePlus strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                                <span>فاتورة توريد</span>
+                              </Button>
 
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openPaymentModal(s)}
-                            className="text-danger-text border-danger-border hover:bg-danger-bg text-xs font-bold gap-1"
-                          >
-                            <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
-                            <span>سداد دفعة</span>
-                          </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openPaymentModal(s)}
+                                className="text-danger-text border-danger-border hover:bg-danger-bg text-xs font-bold gap-1"
+                              >
+                                <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-3.5 h-3.5" />
+                                <span>سداد دفعة</span>
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

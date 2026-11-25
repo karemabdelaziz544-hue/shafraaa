@@ -32,7 +32,7 @@ import {
 import { ICON_TOKENS } from '@/lib/design-tokens';
 
 export default function ImportPage() {
-  const { importDataFromExcel } = useShop();
+  const { importDataFromExcel, can } = useShop();
 
   const [isLoading, setIsLoading] = useState(false);
   const [sheetPreviews, setSheetPreviews] = useState<SheetPreview[]>([]);
@@ -339,18 +339,20 @@ export default function ImportPage() {
                 </div>
               </div>
 
-              <Button
-                variant="primary"
-                size="md"
-                disabled={valResult.validCount === 0}
-                onClick={handleImportValidRowsOnly}
-                className="font-bold gap-2"
-              >
-                <CheckCircle2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
-                <span>
-                  استيراد الصفوف الصالحة فقط ({valResult.validCount} صف)
-                </span>
-              </Button>
+              {can('import.execute') && (
+                <Button
+                  variant="primary"
+                  size="md"
+                  disabled={valResult.validCount === 0}
+                  onClick={handleImportValidRowsOnly}
+                  className="font-bold gap-2"
+                >
+                  <CheckCircle2 strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
+                  <span>
+                    استيراد الصفوف الصالحة فقط ({valResult.validCount} صف)
+                  </span>
+                </Button>
+              )}
             </CardHeader>
 
             <CardContent className="p-4 space-y-4">

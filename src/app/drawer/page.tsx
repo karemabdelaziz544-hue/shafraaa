@@ -26,6 +26,7 @@ export default function DrawerPage() {
     openNewDrawerSession,
     closeDrawerSession,
     reopenDrawerSession,
+    can,
     isInitialLoading,
   } = useShop();
 
@@ -106,27 +107,28 @@ export default function DrawerPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {activeDrawer ? (
-            <Button
-              variant="danger"
-              size="lg"
-              onClick={() => setIsCloseModalOpen(true)}
-              className="gap-2 font-bold"
-            >
-              <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
-              <span>تقفيل اليومية وإغلاق الدرج</span>
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => setIsOpenNewModalOpen(true)}
-              className="gap-2 font-bold shadow-accent"
-            >
+          {can('drawer.open_close') &&
+            (activeDrawer ? (
+              <Button
+                variant="danger"
+                size="lg"
+                onClick={() => setIsCloseModalOpen(true)}
+                className="gap-2 font-bold"
+              >
+                <Lock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
+                <span>تقفيل اليومية وإغلاق الدرج</span>
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => setIsOpenNewModalOpen(true)}
+                className="gap-2 font-bold shadow-accent"
+              >
               <Unlock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
               <span>فتح وردية درج جديدة</span>
             </Button>
-          )}
+            ))}
         </div>
       </div>
 
@@ -209,10 +211,12 @@ export default function DrawerPage() {
           <p className="text-xs text-ink-muted max-w-md mx-auto mt-1 mb-4">
             لا توجد جلسة درج مفتوحة حاليًا. افتح جلسة جديدة لبدء عمليات البيع واستلام النقدية اليومية.
           </p>
-          <Button variant="primary" size="md" onClick={() => setIsOpenNewModalOpen(true)}>
-            <Unlock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
-            <span>فتح وردية درج جديدة</span>
-          </Button>
+          {can('drawer.open_close') && (
+            <Button variant="primary" size="md" onClick={() => setIsOpenNewModalOpen(true)}>
+              <Unlock strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4 ml-1" />
+              <span>فتح وردية درج جديدة</span>
+            </Button>
+          )}
         </Card>
       )}
 
@@ -282,12 +286,12 @@ export default function DrawerPage() {
                       )}
                     </td>
                     <td className="p-3 sm:p-4 text-center">
-                      {session.status === 'closed' && (
+                      {session.status === 'closed' && can('drawer.reopen') && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            if (confirm('بصفتك المالك كريم: هل تريد إعادة فتح هذه الجلسة المغلقة؟')) {
+                            if (confirm('هل تريد إعادة فتح هذه الجلسة المغلقة؟')) {
                               reopenDrawerSession(session.id);
                             }
                           }}

@@ -42,7 +42,7 @@ function getInvoiceStatusBadge(status: SaleInvoice['status']) {
 }
 
 export default function SalesHistoryPage() {
-  const { salesInvoices, salesReturns, ownerName, createSaleReturn, isInitialLoading } = useShop();
+  const { salesInvoices, salesReturns, ownerName, createSaleReturn, can, isInitialLoading } = useShop();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
@@ -221,7 +221,7 @@ export default function SalesHistoryPage() {
                   <th className="p-3 sm:p-4">الحالة</th>
                   <th className="p-3 sm:p-4">طريقة الدفع</th>
                   <th className="p-3 sm:p-4">الإجمالي</th>
-                  <th className="p-3 sm:p-4">مجمل الربح</th>
+                  {can('finance.view_cost_profit') && <th className="p-3 sm:p-4">مجمل الربح</th>}
                   <th className="p-3 sm:p-4">المتبقي (دين)</th>
                   <th className="p-3 sm:p-4 text-center">إجراءات</th>
                 </tr>
@@ -233,6 +233,7 @@ export default function SalesHistoryPage() {
                       {inv.invoiceNumber}
                       <p className="text-[10px] text-ink-muted font-normal">
                         {formatArabicDateTime(inv.createdAt)}
+                        {inv.createdByName ? ` • ${inv.createdByName}` : ''}
                       </p>
                     </td>
                     <td className="p-3 sm:p-4 font-bold text-ink-strong">{inv.customerName}</td>
@@ -261,9 +262,11 @@ export default function SalesHistoryPage() {
                     <td className="p-3 sm:p-4 font-black text-ink-strong">
                       {formatCurrency(inv.totalAmount)}
                     </td>
-                    <td className="p-3 sm:p-4 font-black text-success">
-                      {formatCurrency(inv.grossProfit)}
-                    </td>
+                    {can('finance.view_cost_profit') && (
+                      <td className="p-3 sm:p-4 font-black text-success">
+                        {formatCurrency(inv.grossProfit)}
+                      </td>
+                    )}
                     <td className="p-3 sm:p-4 font-bold">
                       {inv.remainingAmount > 0 ? (
                         <span className="text-danger-text">{formatCurrency(inv.remainingAmount)}</span>
@@ -369,7 +372,7 @@ export default function SalesHistoryPage() {
                           <Badge variant="danger" className="text-[10px]">
                             تم إرجاع الكمية بالكامل
                           </Badge>
-                        ) : (
+                        ) : can('sales.process_return') ? (
                           <Button
                             variant="outline"
                             size="sm"
@@ -379,7 +382,7 @@ export default function SalesHistoryPage() {
                             <RotateCcw strokeWidth={ICON_TOKENS.strokeWidth} className="w-3 h-3 ml-1" />
                             <span>إرجاع</span>
                           </Button>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   );

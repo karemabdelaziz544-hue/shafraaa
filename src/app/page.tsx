@@ -36,6 +36,8 @@ export default function HomePage() {
     salesInvoices,
     expenses,
     activeDrawer,
+    currentUserName,
+    can,
     isInitialLoading,
   } = useShop();
 
@@ -98,7 +100,7 @@ export default function HomePage() {
               <span>لوحة التحكم الكاملة</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-palladian">
-              أهلًا يا {ownerName}، يوم موفق في تجارتك!
+              أهلًا يا {currentUserName || ownerName}، يوم موفق في تجارتك!
             </h1>
             <p className="text-sm sm:text-base text-oatmeal max-w-xl">
               كل عمليات محلك تحت سيطرتك المباشرة: مبيعات، تكلفة حقيقية، مخزون دقيق، وتقفيل الدرج بالجنيه المصري.
@@ -106,22 +108,26 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/sales/new">
-              <Button size="xl" variant="primary" className="shadow-accent font-bold">
-                <ShoppingCart strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
-                <span>فاتورة بيع سريعة</span>
-              </Button>
-            </Link>
-            <Link href="/drawer">
-              <Button
-                size="xl"
-                variant="outline"
-                className="border-oatmeal/40 bg-abyssal/40 text-palladian hover:bg-abyssal/75 hover:border-flame font-semibold"
-              >
-                <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
-                <span>{activeDrawer ? 'إدارة الدرج' : 'فتح الوردية'}</span>
-              </Button>
-            </Link>
+            {can('pos.view') && can('pos.create') && (
+              <Link href="/sales/new">
+                <Button size="xl" variant="primary" className="shadow-accent font-bold">
+                  <ShoppingCart strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
+                  <span>فاتورة بيع سريعة</span>
+                </Button>
+              </Link>
+            )}
+            {can('drawer.view') && (
+              <Link href="/drawer">
+                <Button
+                  size="xl"
+                  variant="outline"
+                  className="border-oatmeal/40 bg-abyssal/40 text-palladian hover:bg-abyssal/75 hover:border-flame font-semibold"
+                >
+                  <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5 text-flame" />
+                  <span>{activeDrawer ? 'إدارة الدرج' : 'فتح الوردية'}</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -146,26 +152,45 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        {/* 2. مجمل الربح */}
-        <Card className="hover:border-success-border transition-colors">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-ink-muted">مجمل ربح اليوم</span>
-              <div className="w-9 h-9 rounded-xl bg-success-bg text-success flex items-center justify-center">
-                <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
+        {/* 2. مجمل الربح (للمصرح لهم برؤية التكلفة والأرباح فقط) */}
+        {can('finance.view_cost_profit') ? (
+          <Card className="hover:border-success-border transition-colors">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-ink-muted">مجمل ربح اليوم</span>
+                <div className="w-9 h-9 rounded-xl bg-success-bg text-success flex items-center justify-center">
+                  <DollarSign strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
+                </div>
               </div>
-            </div>
-            <div className="text-lg sm:text-2xl font-black text-success">
-              <AnimatedNumber value={todayGrossProfit} />
-            </div>
-            <p className="text-xs text-ink-muted mt-1">
-              الهامش:{' '}
-              <span className="font-bold text-success">
-                {todaySalesTotal > 0 ? formatPercent((todayGrossProfit / todaySalesTotal) * 100) : '0%'}
-              </span>
-            </p>
-          </CardContent>
-        </Card>
+              <div className="text-lg sm:text-2xl font-black text-success">
+                <AnimatedNumber value={todayGrossProfit} />
+              </div>
+              <p className="text-xs text-ink-muted mt-1">
+                الهامش:{' '}
+                <span className="font-bold text-success">
+                  {todaySalesTotal > 0 ? formatPercent((todayGrossProfit / todaySalesTotal) * 100) : '0%'}
+                </span>
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="hover:border-line transition-colors">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-ink-muted">الأصناف المتوفرة</span>
+                <div className="w-9 h-9 rounded-xl bg-surface-alt text-ink-strong flex items-center justify-center">
+                  <Package strokeWidth={ICON_TOKENS.strokeWidth} className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="text-lg sm:text-2xl font-black text-ink-strong">
+                <AnimatedNumber value={products.length} formatter={(n) => `${Math.round(n)} صنف`} />
+              </div>
+              <p className="text-xs text-ink-muted mt-1">
+                نواقص: <span className="font-bold text-warning">{lowStockProducts.length}</span>
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 3. مصروفات اليوم */}
         <Card className="hover:border-danger-border transition-colors">
@@ -317,64 +342,74 @@ export default function HomePage() {
         </CardContent>
       </Card>
 
-      {/* شبكة الإجراءات السريعة عريضة اللمس */}
+      {/* شبكة الإجراءات السريعة عريضة اللمس (مفلترة حسب الصلاحيات) */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-ink-strong">إجراءات سريعة</h3>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <Link href="/sales/new">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
-            >
-              <ShoppingCart strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
-              <span className="text-xs font-bold">فاتورة بيع</span>
-            </Button>
-          </Link>
+          {can('pos.view') && can('pos.create') && (
+            <Link href="/sales/new">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
+              >
+                <ShoppingCart strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
+                <span className="text-xs font-bold">فاتورة بيع</span>
+              </Button>
+            </Link>
+          )}
 
-          <Link href="/products">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
-            >
-              <Package strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-ink-strong" />
-              <span className="text-xs font-bold">إضافة صنف</span>
-            </Button>
-          </Link>
+          {can('products.view') && (
+            <Link href="/products">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
+              >
+                <Package strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-ink-strong" />
+                <span className="text-xs font-bold">إضافة صنف</span>
+              </Button>
+            </Link>
+          )}
 
-          <Link href="/expenses">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
-            >
-              <Receipt strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-danger-text" />
-              <span className="text-xs font-bold">صرف مصروف</span>
-            </Button>
-          </Link>
+          {can('expenses.view') && (
+            <Link href="/expenses">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
+              >
+                <Receipt strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-danger-text" />
+                <span className="text-xs font-bold">صرف مصروف</span>
+              </Button>
+            </Link>
+          )}
 
-          <Link href="/inventory">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
-            >
-              <Boxes strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-success" />
-              <span className="text-xs font-bold">جرد المخزن</span>
-            </Button>
-          </Link>
+          {can('inventory.view') && (
+            <Link href="/inventory">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
+              >
+                <Boxes strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-success" />
+                <span className="text-xs font-bold">جرد المخزن</span>
+              </Button>
+            </Link>
+          )}
 
-          <Link href="/drawer" className="col-span-2 sm:col-span-1">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
-            >
-              <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-warning" />
-              <span className="text-xs font-bold">تقفيل الدرج</span>
-            </Button>
-          </Link>
+          {can('drawer.view') && (
+            <Link href="/drawer" className="col-span-2 sm:col-span-1">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full h-20 flex-col gap-2 bg-surface hover:border-flame hover:bg-flame/15 text-ink-strong rounded-2xl"
+              >
+                <Vault strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-warning" />
+                <span className="text-xs font-bold">تقفيل الدرج</span>
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

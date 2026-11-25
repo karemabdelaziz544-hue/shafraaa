@@ -38,8 +38,11 @@ export default function ReportsPage() {
     expenses,
     ownerWithdrawals,
     damagedItems,
+    can,
     isInitialLoading,
   } = useShop();
+  const canViewCost = can('finance.view_cost_profit');
+  const canExport = can('export.data');
 
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | 'all'>('month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -135,13 +138,21 @@ export default function ReportsPage() {
 
     const incomeStatementData = [
       { 'البيان': 'إجمالي إيراد المبيعات', 'المبلغ (ج.م)': totalSalesRevenue },
-      { 'البيان': 'تكلفة البضاعة المباعة (COGS)', 'المبلغ (ج.م)': totalCostOfGoodsSold },
-      { 'البيان': 'مجمل ربح النشاط', 'المبلغ (ج.م)': totalGrossProfit },
+      ...(canViewCost
+        ? [
+            { 'البيان': 'تكلفة البضاعة المباعة (COGS)', 'المبلغ (ج.م)': totalCostOfGoodsSold },
+            { 'البيان': 'مجمل ربح النشاط', 'المبلغ (ج.م)': totalGrossProfit },
+          ]
+        : []),
       { 'البيان': 'المصروفات المتغيرة', 'المبلغ (ج.م)': variableExpenses },
       { 'البيان': 'المصروفات الثابتة (تخصم مرة للفترة)', 'المبلغ (ج.م)': fixedExpenses },
-      { 'البيان': 'خسائر الهالك والتوالف (بسعر التكلفة)', 'المبلغ (ج.م)': totalDamagedLoss },
-      { 'البيان': 'صافي الربح الفعلي', 'المبلغ (ج.م)': netProfitResult.netProfit },
-      { 'البيان': 'مسحوبات المالك (كريم) - لا تخصم من الأرباح', 'المبلغ (ج.م)': totalWithdrawals },
+      ...(canViewCost
+        ? [
+            { 'البيان': 'خسائر الهالك والتوالف (بسعر التكلفة)', 'المبلغ (ج.م)': totalDamagedLoss },
+            { 'البيان': 'صافي الربح الفعلي', 'المبلغ (ج.م)': netProfitResult.netProfit },
+          ]
+        : []),
+      { 'البيان': 'مسحوبات المالك - لا تخصم من الأرباح', 'المبلغ (ج.م)': totalWithdrawals },
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeStatementData), 'قائمة الدخل والأرباح');
 
@@ -149,8 +160,12 @@ export default function ReportsPage() {
       const damagedExport = filteredDamaged.map((d) => ({
         'اسم الصنف': d.productName,
         'الكمية': d.quantity,
-        'تكلفة الوحدة': d.unitCost,
-        'إجمالي الخسارة': d.totalLoss,
+        ...(canViewCost
+          ? {
+              'تكلفة الوحدة': d.unitCost,
+              'إجمالي الخسارة': d.totalLoss,
+            }
+          : {}),
         'سبب الهلاك': d.reason,
         'التاريخ': d.date,
         'ملاحظات': d.notes || '',
@@ -163,8 +178,12 @@ export default function ReportsPage() {
       'العميل': inv.customerName,
       'طريقة الدفع': inv.paymentMethod,
       'إجمالي الفاتورة': inv.totalAmount,
-      'التكلفة': inv.totalCost,
-      'مجمل الربح': inv.grossProfit,
+      ...(canViewCost
+        ? {
+            'التكلفة': inv.totalCost,
+            'مجمل الربح': inv.grossProfit,
+          }
+        : {}),
       'المدفوع': inv.paidAmount,
       'المتبقي (دين)': inv.remainingAmount,
       'التاريخ': inv.createdAt,
@@ -188,16 +207,18 @@ export default function ReportsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 no-print">
-          <Button variant="outline" size="md" onClick={() => window.print()} className="gap-1.5">
-            <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
-            <span>طباعة PDF</span>
-          </Button>
-          <Button variant="primary" size="md" onClick={exportToExcel} className="gap-1.5">
-            <Download strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
-            <span>تصدير إكسيل (XLSX)</span>
-          </Button>
-        </div>
+        {canExport && (
+          <div className="flex items-center gap-2 no-print">
+            <Button variant="outline" size="md" onClick={() => window.print()} className="gap-1.5">
+              <Printer strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
+              <span>طباعة PDF</span>
+            </Button>
+            <Button variant="primary" size="md" onClick={exportToExcel} className="gap-1.5">
+              <Download strokeWidth={ICON_TOKENS.strokeWidth} className="w-4 h-4" />
+              <span>تصدير إكسيل (XLSX)</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* شريط اختيار الفترة */}
@@ -249,19 +270,21 @@ export default function ReportsPage() {
 
       {/* البطاقات المالية الكبرى: صافي الربح وقائمة الدخل */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="bg-gradient-to-br from-abyssal to-fantastic text-palladian border-abyssal shadow-elevated sm:col-span-2 lg:col-span-1">
-          <CardContent className="p-5">
-            <span className="text-xs font-bold text-oatmeal block mb-1">
-              صافي الربح الفعلي للفترة
-            </span>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-flame">
-              <AnimatedNumber value={netProfitResult.netProfit} />
-            </div>
-            <p className="text-[11px] text-oatmeal mt-2">
-              مجمل الربح - المصروفات - خسائر الهالك
-            </p>
-          </CardContent>
-        </Card>
+        {canViewCost && (
+          <Card className="bg-gradient-to-br from-abyssal to-fantastic text-palladian border-abyssal shadow-elevated sm:col-span-2 lg:col-span-1">
+            <CardContent className="p-5">
+              <span className="text-xs font-bold text-oatmeal block mb-1">
+                صافي الربح الفعلي للفترة
+              </span>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-flame">
+                <AnimatedNumber value={netProfitResult.netProfit} />
+              </div>
+              <p className="text-[11px] text-oatmeal mt-2">
+                مجمل الربح - المصروفات - خسائر الهالك
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-5">
@@ -273,19 +296,21 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-5">
-            <span className="text-xs font-bold text-ink-muted block mb-1">
-              تكلفة البضاعة المباعة (COGS)
-            </span>
-            <div className="text-2xl font-black text-ink font-mono">
-              <AnimatedNumber value={totalCostOfGoodsSold} />
-            </div>
-            <p className="text-xs text-ink-muted mt-1">
-              مجمل الربح: <span className="font-bold text-success">{formatCurrency(totalGrossProfit)}</span>
-            </p>
-          </CardContent>
-        </Card>
+        {canViewCost && (
+          <Card>
+            <CardContent className="p-5">
+              <span className="text-xs font-bold text-ink-muted block mb-1">
+                تكلفة البضاعة المباعة (COGS)
+              </span>
+              <div className="text-2xl font-black text-ink font-mono">
+                <AnimatedNumber value={totalCostOfGoodsSold} />
+              </div>
+              <p className="text-xs text-ink-muted mt-1">
+                مجمل الربح: <span className="font-bold text-success">{formatCurrency(totalGrossProfit)}</span>
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-5">
@@ -360,10 +385,12 @@ export default function ReportsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3 text-xs">
-            <div className="p-3 rounded-xl bg-surface-alt border border-line flex items-center justify-between">
-              <span className="text-ink font-medium">قيمة بضاعة المخزن (بسعر التكلفة):</span>
-              <span className="font-black font-mono text-ink-strong">{formatCurrency(totalStockCostValue)}</span>
-            </div>
+            {canViewCost && (
+              <div className="p-3 rounded-xl bg-surface-alt border border-line flex items-center justify-between">
+                <span className="text-ink font-medium">قيمة بضاعة المخزن (بسعر التكلفة):</span>
+                <span className="font-black font-mono text-ink-strong">{formatCurrency(totalStockCostValue)}</span>
+              </div>
+            )}
 
             <div className="p-3 rounded-xl bg-danger-bg flex items-center justify-between border border-danger-border">
               <span className="text-danger-text font-medium">ديون العملاء لنا في السوق (آجل):</span>
