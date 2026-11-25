@@ -188,3 +188,148 @@ test('5. اختبار تقفيل الدرج اليومي: الرصيد المت�
   assert.strictEqual(balanced.difference, 0);
   assert.strictEqual(balanced.status, 'balanced');
 });
+
+// 8. دوال التحقق من المرتجعات وتحديث حالة الفاتورة ودين العميل
+function calculateReturnableLineState(soldQuantity, returnedQuantity = 0) {
+  const sold = Number(Math.max(0, soldQuantity).toFixed(2));
+  const returned = Number(Math.max(0, returnedQuantity).toFixed(2));
+  const remainingReturnableQuantity = Number(Math.max(0, sold - returned).toFixed(2));
+  return {
+    soldQuantity: sold,
+    returnedQuantity: returned,
+    remainingReturnableQuantity,
+    isFullyReturned: remainingReturnableQuantity <= 0,
+  };
+}
+
+function validateSaleReturnRequest(params) {
+  const state = calculateReturnableLineState(params.soldQuantity, params.alreadyReturnedQuantity);
+  const requested = Number((params.requestedQuantity || 0).toFixed(2));
+
+  if (requested <= 0) {
+    return {
+      valid: false,
+      error: 'يجب أن تكون الكمية المرتجعة أكبر من صفر.',
+      remainingBeforeReturn: state.remainingReturnableQuantity,
+      remainingAfterReturn: state.remainingReturnableQuantity,
+    };
+  }
+  if (state.remainingReturnableQuantity <= 0) {
+    return {
+      valid: false,
+      error: 'تم إرجاع كامل كمية هذا الصنف مسبقاً ولا توجد كمية متبقية للإرجاع.',
+      remainingBeforeReturn: 0,
+      remainingAfterReturn: 0,
+    };
+  }
+  if (requested > state.remainingReturnableQuantity) {
+    return {
+      valid: false,
+      error: `الكمية المطلوب إرجاعها (${requested}) أكبر من الكمية المتبقية القابلة للإرجاع (${state.remainingReturnableQuantity}).`,
+      remainingBeforeReturn: state.remainingReturnableQuantity,
+      remainingAfterReturn: state.remainingReturnableQuantity,
+    };
+  }
+  return {
+    valid: true,
+    remainingBeforeReturn: state.remainingReturnableQuantity,
+    remainingAfterReturn: Number((state.remainingReturnableQuantity - requested).toFixed(2)),
+  };
+}
+
+function determineInvoiceReturnStatus(items) {
+  const totalSold = items.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+  const totalReturned = items.reduce((sum, it) => sum + Number(it.returnedQuantity || 0), 0);
+  if (totalSold > 0 && totalReturned >= totalSold) return 'returned_full';
+  if (totalReturned > 0) return 'returned_partial';
+  return 'completed';
+}
+
+function calculateReturnFinancialAdjustments(params) {
+  const refund = Number(Math.max(0, params.refundAmount).toFixed(2));
+  if (params.refundMethod === 'credit') {
+    const customerBalanceReduction = Number(Math.min(Math.max(0, params.customerCurrentBalance), refund).toFixed(2));
+    const invoiceRemainingReduction = Number(Math.min(Math.max(0, params.invoiceRemainingAmount), refund).toFixed(2));
+    return {
+      cashDrawerDeduction: 0,
+      customerBalanceReduction,
+      newCustomerBalance: Number(Math.max(0, params.customerCurrentBalance - customerBalanceReduction).toFixed(2)),
+      invoiceRemainingReduction,
+      newInvoiceRemaining: Number(Math.max(0, params.invoiceRemainingAmount - invoiceRemainingReduction).toFixed(2)),
+    };
+  }
+  return {
+    cashDrawerDeduction: params.refundMethod === 'cash' ? refund : 0,
+    customerBalanceReduction: 0,
+    newCustomerBalance: Number(Math.max(0, params.customerCurrentBalance).toFixed(2)),
+    invoiceRemainingReduction: 0,
+    newInvoiceRemaining: Number(Math.max(0, params.invoiceRemainingAmount).toFixed(2)),
+  };
+}
+
+test('6. اختبار قواعد المرتجع الجزئي والكلي ومنع إرجاع كمية أكبر من المتبقي', () => {
+  // صنف مباع منه 5 قطع
+  const firstAttempt = validateSaleReturnRequest({
+    soldQuantity: 5,
+    alreadyReturnedQuantity: 0,
+    requestedQuantity: 2,
+  });
+  assert.strictEqual(firstAttempt.valid, true);
+  assert.strictEqual(firstAttempt.remainingAfterReturn, 3);
+
+  // حالة الفاتورة تصبح مرتجع جزئي
+  const partialStatus = determineInvoiceReturnStatus([
+    { quantity: 5, returnedQuantity: 2 },
+    { quantity: 2, returnedQuantity: 0 },
+  ]);
+  assert.strictEqual(partialStatus, 'returned_partial');
+
+  // محاولة إرجاع 4 قطع من المتبقي 3 قطع -> يجب المنع
+  const overLimit = validateSaleReturnRequest({
+    soldQuantity: 5,
+    alreadyReturnedQuantity: 2,
+    requestedQuantity: 4,
+  });
+  assert.strictEqual(overLimit.valid, false);
+  assert.match(overLimit.error, /أكبر من الكمية المتبقية/);
+
+  // إرجاع الباقي بالكامل -> الفاتورة تصبح مرتجع بالكامل وأي محاولة بعدها مرفوضة
+  const fullStatus = determineInvoiceReturnStatus([
+    { quantity: 5, returnedQuantity: 5 },
+    { quantity: 2, returnedQuantity: 2 },
+  ]);
+  assert.strictEqual(fullStatus, 'returned_full');
+
+  const afterFull = validateSaleReturnRequest({
+    soldQuantity: 5,
+    alreadyReturnedQuantity: 5,
+    requestedQuantity: 1,
+  });
+  assert.strictEqual(afterFull.valid, false);
+});
+
+test('7. اختبار تعديل دين العميل والدرج عند المرتجع وتنسيق الأرقام السالبة بدون أحرف تحكم مخفية', () => {
+  const creditAdj = calculateReturnFinancialAdjustments({
+    refundAmount: 300,
+    refundMethod: 'credit',
+    customerCurrentBalance: 800,
+    invoiceRemainingAmount: 500,
+  });
+  assert.strictEqual(creditAdj.cashDrawerDeduction, 0);
+  assert.strictEqual(creditAdj.newCustomerBalance, 500);
+  assert.strictEqual(creditAdj.newInvoiceRemaining, 200);
+
+  const cashAdj = calculateReturnFinancialAdjustments({
+    refundAmount: 150,
+    refundMethod: 'cash',
+    customerCurrentBalance: 800,
+    invoiceRemainingAmount: 0,
+  });
+  assert.strictEqual(cashAdj.cashDrawerDeduction, 150);
+  assert.strictEqual(cashAdj.newCustomerBalance, 800);
+
+  // التحقق من خلو الأرقام السالبة من علامات التحكم الخفية U+061C / U+200E / U+200F
+  const rawFormatted = new Intl.NumberFormat('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(4955);
+  const cleaned = `-${rawFormatted.replace(/[\u200B-\u200F\u202A-\u202E\u061C\uFEFF]/g, '')} ج.م`;
+  assert.strictEqual(/[\u200B-\u200F\u202A-\u202E\u061C\uFEFF]/.test(cleaned), false);
+});

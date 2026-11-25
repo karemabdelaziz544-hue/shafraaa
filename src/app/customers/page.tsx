@@ -44,11 +44,11 @@ export default function CustomersPage() {
     return c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q));
   });
 
-  const handleSaveCustomer = (e: React.FormEvent) => {
+  const handleSaveCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerData.name.trim()) return;
 
-    addCustomer({
+    const res = await addCustomer({
       name: newCustomerData.name.trim(),
       phone: newCustomerData.phone.trim(),
       creditLimit: newCustomerData.creditLimit,
@@ -56,17 +56,26 @@ export default function CustomersPage() {
       notes: newCustomerData.notes,
     });
 
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ العميل في قاعدة البيانات');
+      return;
+    }
+
     setIsAddModalOpen(false);
     setNewCustomerData({ name: '', phone: '', creditLimit: 0, initialBalance: 0, notes: '' });
   };
 
-  const handleConfirmPayment = (e: React.FormEvent) => {
+  const handleConfirmPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer) return;
     const amt = parseFloat(paymentAmount);
     if (!amt || amt <= 0) return;
 
-    addCustomerPayment(selectedCustomer.id, amt, paymentMethod, paymentNotes);
+    const res = await addCustomerPayment(selectedCustomer.id, amt, paymentMethod, paymentNotes);
+    if (!res.ok) {
+      alert(res.error || 'تعذر تسجيل الدفعة في قاعدة البيانات');
+      return;
+    }
     setIsPaymentModalOpen(false);
     setPaymentAmount('');
     setPaymentNotes('');

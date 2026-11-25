@@ -61,25 +61,30 @@ export default function NewSalePage() {
   const [newCustName, setNewCustName] = useState('');
   const [newCustPhone, setNewCustPhone] = useState('');
   const [addCustError, setAddCustError] = useState('');
+  const [isSavingSale, setIsSavingSale] = useState(false);
 
   // حالة إغلاق الدرج وحظره
   const isDrawerClosed = !activeDrawer || activeDrawer.status !== 'open';
   const lastClosedSession = drawerSessions.find((s) => s.status === 'closed') || drawerSessions[0];
 
-  const handleQuickAddCustomer = (e: React.FormEvent) => {
+  const handleQuickAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustName.trim()) {
       setAddCustError('يرجى إدخال اسم العميل');
       return;
     }
-    const created = addCustomer({
+    const res = await addCustomer({
       name: newCustName.trim(),
       phone: newCustPhone.trim(),
       creditLimit: 0,
       initialBalance: 0,
       notes: 'تمت الإضافة سريعاً من شاشة نقطة البيع',
     });
-    setSelectedCustomerId(created.id);
+    if (!res.ok || !res.customer) {
+      setAddCustError(res.error || 'تعذر حفظ العميل في قاعدة البيانات');
+      return;
+    }
+    setSelectedCustomerId(res.customer.id);
     setIsAddCustomerOpen(false);
     setNewCustName('');
     setNewCustPhone('');
@@ -173,7 +178,7 @@ export default function NewSalePage() {
   const remainingDebt = Math.max(0, totalAmount - actualPaidAmount);
 
   // إتمام وحفظ الفاتورة
-  const handleCompleteSale = () => {
+  const handleCompleteSale = async () => {
     if (isDrawerClosed) {
       setInvoiceWarning('الدرج مقفل حالياً! لا يمكن إصدار فاتورة بيع جديدة قبل إعادة فتح الدرج بواسطة المالك.');
       return;
@@ -186,7 +191,8 @@ export default function NewSalePage() {
       return;
     }
 
-    const { invoice, warning } = createSaleInvoice({
+    setIsSavingSale(true);
+    const { ok, invoice, warning, error } = await createSaleInvoice({
       customerId: selectedCustomerId || null,
       items: cart.map((item) => ({
         productId: item.product.id,
@@ -198,6 +204,12 @@ export default function NewSalePage() {
       paymentMethod,
       paidAmount: actualPaidAmount,
     });
+    setIsSavingSale(false);
+
+    if (!ok || !invoice) {
+      setInvoiceWarning(error || warning || 'تعذر حفظ الفاتورة في قاعدة البيانات.');
+      return;
+    }
 
     if (warning) {
       setInvoiceWarning(warning);
@@ -299,6 +311,14 @@ export default function NewSalePage() {
           </div>
 
           {/* شبكة المنتجات ذات اللمس السريع */}
+          {filteredProducts.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-xs text-slate-500 space-y-2">
+              <p className="font-bold text-slate-700">
+                {products.length === 0 ? 'لا توجد منتجات مسجلة في هذا المتجر حتى الآن' : 'لا توجد منتجات مطابقة للبحث'}
+              </p>
+              <p>أضف منتجات من صفحة المنتجات أو عبر فاتورة توريد من الموردين للبدء في البيع.</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto p-1">
             {filteredProducts.map((p) => {
               const isLow = p.currentStock <= p.minStockAlert;
@@ -335,6 +355,7 @@ export default function NewSalePage() {
               );
             })}
           </div>
+          )}
         </div>
 
         {/* عمود سلة الفاتورة والدفع (5 أعمدة) */}
@@ -565,7 +586,8 @@ export default function NewSalePage() {
               <Button
                 size="xl"
                 variant={isDrawerClosed ? 'outline' : 'primary'}
-                disabled={cart.length === 0 || isDrawerClosed}
+                disabled={cart.length === 0 || isDrawerClosed || isSavingSale}
+                isLoading={isSavingSale}
                 onClick={handleCompleteSale}
                 className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
                   isDrawerClosed
@@ -658,6 +680,7 @@ export default function NewSalePage() {
       {completedInvoice && (
         <InvoicePrintView
           invoice={completedInvoice}
+          showSuccessBanner={true}
           onClose={() => setCompletedInvoice(null)}
         />
       )}

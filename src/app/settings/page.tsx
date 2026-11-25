@@ -7,9 +7,10 @@ import {
   Download,
   Upload,
   RotateCcw,
-  ShieldCheck,
   CheckCircle2,
   Key,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
 import { Button } from '@/components/ui/button';
@@ -18,18 +19,21 @@ import { Badge } from '@/components/ui/badge';
 
 export default function SettingsPage() {
   const {
+    shopId,
     shopName,
     ownerName,
-    products,
-    customers,
-    suppliers,
-    salesInvoices,
+    userEmail,
+    isSupabaseConfigured,
+    cloudStatus,
+    cloudError,
+    refreshFromCloud,
     exportDatabaseJSON,
     restoreDatabaseJSON,
     resetToSampleData,
   } = useShop();
 
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+  const [isCheckingCloud, setIsCheckingCloud] = useState(false);
 
   // تحميل النسخة الاحتياطية الكاملة بصيغة JSON
   const handleDownloadBackup = () => {
@@ -61,9 +65,11 @@ export default function SettingsPage() {
     reader.readAsText(file);
   };
 
-  const isSupabaseConfigured = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  const handleCheckConnection = async () => {
+    setIsCheckingCloud(true);
+    await refreshFromCloud();
+    setIsCheckingCloud(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -73,7 +79,7 @@ export default function SettingsPage() {
           <span>إعدادات المحل والنسخ الاحتياطي</span>
         </h1>
         <p className="text-xs text-slate-500">
-          أهلًا يا كريم - إدارة بيانات المنشأة، حفظ نسخ الأمان الاحتياطية، وحالة الاتصال
+          أهلًا يا {ownerName} - إدارة بيانات المنشأة، حفظ نسخ الأمان الاحتياطية، وحالة الاتصال الفعلية
         </p>
       </div>
 
@@ -96,18 +102,101 @@ export default function SettingsPage() {
               <p className="font-bold text-base text-slate-900">{shopName}</p>
             </div>
             <div>
-              <span className="text-slate-500 block mb-1">المالك المسؤول:</span>
-              <p className="font-bold text-base text-slate-900">{ownerName}</p>
+              <span className="text-slate-500 block mb-1">المستخدم المسؤول:</span>
+              <p className="font-bold text-base text-slate-900">
+                {ownerName} {userEmail ? `(${userEmail})` : ''}
+              </p>
             </div>
             <div>
               <span className="text-slate-500 block mb-1">العملة الأساسية:</span>
               <p className="font-bold text-base text-slate-900">الجنيه المصري (EGP / ج.م)</p>
             </div>
             <div>
-              <span className="text-slate-500 block mb-1">الاتجاه واللغة:</span>
-              <p className="font-bold text-base text-slate-900">العربية (RTL) - خط Cairo</p>
+              <span className="text-slate-500 block mb-1">معرف المتجر (Shop ID):</span>
+              <p className="font-mono text-xs text-slate-700" dir="ltr">
+                {shopId || 'وضع محلي (بدون معرف سحابي)'}
+              </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* حالة الاتصال الفعلية بقاعدة بيانات Supabase */}
+      <Card className={cloudStatus === 'error' ? 'border-rose-300' : ''}>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-2">
+              <Key className={`w-5 h-5 ${cloudStatus === 'connected' ? 'text-emerald-600' : cloudStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`} />
+              <span>حالة تكامل Supabase السحابي</span>
+            </span>
+            {isSupabaseConfigured && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCheckConnection}
+                isLoading={isCheckingCloud}
+                className="gap-1.5 text-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>فحص الاتصال الآن</span>
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div
+            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border ${
+              cloudStatus === 'connected'
+                ? 'bg-emerald-50/70 border-emerald-200'
+                : cloudStatus === 'error'
+                ? 'bg-rose-50 border-rose-300'
+                : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div>
+              <p className="text-xs font-bold text-slate-900">حالة الاتصال الفعلية بقاعدة البيانات:</p>
+              <p
+                className={`text-[11px] mt-0.5 ${
+                  cloudStatus === 'error' ? 'text-rose-800 font-semibold' : 'text-slate-600'
+                }`}
+              >
+                {cloudStatus === 'connected'
+                  ? `متصل سحابيًا بنجاح وتم التحقق من قراءة جداول المتجر (${shopName})`
+                  : cloudStatus === 'error'
+                  ? cloudError || 'فشلت القراءة من قاعدة البيانات (تأكد من صلاحيات GRANT و RLS وربط الحساب بمتجر)'
+                  : 'يعمل التطبيق حاليًا في وضع التخزين المحلي (لم يتم إعداد مفاتيح Supabase)'}
+              </p>
+            </div>
+            <Badge
+              variant={
+                cloudStatus === 'connected'
+                  ? 'success'
+                  : cloudStatus === 'error'
+                  ? 'danger'
+                  : 'default'
+              }
+              className="shrink-0"
+            >
+              {cloudStatus === 'connected'
+                ? 'متصل ومفعل'
+                : cloudStatus === 'error'
+                ? 'فشل الاتصال بالبيانات'
+                : 'تخزين محلي نشط'}
+            </Badge>
+          </div>
+
+          {cloudStatus === 'error' && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span>
+                يرجى تشغيل ملف الميجريشن <code className="font-mono font-bold">20261125_000005_fix_grants_rls_and_returns.sql</code> في Supabase SQL Editor لمنح صلاحيات الجداول لدور <code className="font-mono">authenticated</code> وتصحيح سياسات RLS.
+              </span>
+            </div>
+          )}
+
+          <p className="text-[11px] text-slate-400">
+            ملفات التهجرة SQL موجودة في مجلد <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">supabase/migrations</code> لتشغيلها مباشرة في لوحة Supabase الخاصة بك.
+          </p>
         </CardContent>
       </Card>
 
@@ -121,7 +210,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-slate-600 leading-relaxed">
-            يمكنك تنزيل نسخة احتياطية مشفرة بجميع الأصناف، الفواتير، ديون العملاء، الموردين، وجلسات الدرج في أي وقت، واستعادتها بضغطة زر واحدة لحماية تجارتك.
+            يمكنك تنزيل نسخة احتياطية بجميع الأصناف، الفواتير، ديون العملاء، الموردين، وجلسات الدرج في أي وقت، واستعادتها لحماية تجارتك.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -130,62 +219,38 @@ export default function SettingsPage() {
               <span>تنزيل نسخة احتياطية كاملة (JSON)</span>
             </Button>
 
-            <input
-              type="file"
-              id="restore-file"
-              accept=".json"
-              onChange={handleRestoreBackup}
-              className="hidden"
-            />
-            <label htmlFor="restore-file">
-              <span className="inline-flex items-center justify-center h-12 px-6 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm cursor-pointer transition-all gap-2">
-                <Upload className="w-4 h-4" />
-                <span>استعادة من ملف نسخة احتياطية</span>
-              </span>
-            </label>
+            {!isSupabaseConfigured && (
+              <>
+                <input
+                  type="file"
+                  id="restore-file"
+                  accept=".json"
+                  onChange={handleRestoreBackup}
+                  className="hidden"
+                />
+                <label htmlFor="restore-file">
+                  <span className="inline-flex items-center justify-center h-12 px-6 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm cursor-pointer transition-all gap-2">
+                    <Upload className="w-4 h-4" />
+                    <span>استعادة من ملف نسخة احتياطية</span>
+                  </span>
+                </label>
 
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => {
-                if (confirm('هل أنت متأكد من إعادة تعيين البيانات للوضع النموذجي الافتراضي؟')) {
-                  resetToSampleData();
-                }
-              }}
-              className="text-rose-600 border-rose-200 hover:bg-rose-50 mr-auto"
-            >
-              <RotateCcw className="w-4 h-4 ml-1" />
-              <span>إعادة ضبط البيانات النموذجية</span>
-            </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    if (confirm('هل أنت متأكد من إعادة تعيين البيانات للوضع النموذجي الافتراضي؟')) {
+                      resetToSampleData();
+                    }
+                  }}
+                  className="text-rose-600 border-rose-200 hover:bg-rose-50 mr-auto"
+                >
+                  <RotateCcw className="w-4 h-4 ml-1" />
+                  <span>إعادة ضبط البيانات النموذجية</span>
+                </Button>
+              </>
+            )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* حالة الاتصال بقاعدة بيانات Supabase */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="w-5 h-5 text-emerald-600" />
-            <span>حالة تكامل Supabase السحابي</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <div>
-              <p className="text-xs font-bold text-slate-900">اتصال Supabase المباشر:</p>
-              <p className="text-[11px] text-slate-500">
-                {isSupabaseConfigured
-                  ? 'تم ربط المفاتيح بنجاح من متغيرات البيئة .env'
-                  : 'يعمل التطبيق حاليًا في وضع التخزين المحلي الآمن (Offline-First)'}
-              </p>
-            </div>
-            <Badge variant={isSupabaseConfigured ? 'success' : 'default'}>
-              {isSupabaseConfigured ? 'متصل سحابيًا' : 'تخزين محلي نشط'}
-            </Badge>
-          </div>
-          <p className="text-[11px] text-slate-400">
-            ملفات التهجرة SQL موجودة في مجلد <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">supabase/migrations</code> لتشغيلها مباشرة في لوحة Supabase الخاصة بك.
-          </p>
         </CardContent>
       </Card>
     </div>

@@ -36,25 +36,40 @@ export default function DrawerPage() {
   const [actualCashInput, setActualCashInput] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
   const [openingCashInput, setOpeningCashInput] = useState('500');
+  const [drawerError, setDrawerError] = useState<string | null>(null);
+  const [isDrawerSaving, setIsDrawerSaving] = useState(false);
 
   // حساب الفارق الحي عند إدخال النقدية الفعلية
   const actualNum = parseFloat(actualCashInput) || 0;
   const liveDifference = activeDrawer ? Number((actualNum - activeDrawer.expectedCash).toFixed(2)) : 0;
 
-  const handleCloseDrawer = (e: React.FormEvent) => {
+  const handleCloseDrawer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeDrawer) return;
-
-    closeDrawerSession(actualNum, closingNotes);
+    setDrawerError(null);
+    setIsDrawerSaving(true);
+    const res = await closeDrawerSession(actualNum, closingNotes);
+    setIsDrawerSaving(false);
+    if (!res.ok) {
+      setDrawerError(res.error || 'تعذر إغلاق الدرج في قاعدة البيانات');
+      return;
+    }
     setIsCloseModalOpen(false);
     setActualCashInput('');
     setClosingNotes('');
   };
 
-  const handleOpenNewDrawer = (e: React.FormEvent) => {
+  const handleOpenNewDrawer = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDrawerError(null);
     const op = parseFloat(openingCashInput) || 0;
-    openNewDrawerSession(op);
+    setIsDrawerSaving(true);
+    const res = await openNewDrawerSession(op);
+    setIsDrawerSaving(false);
+    if (!res.ok) {
+      setDrawerError(res.error || 'تعذر فتح وردية الدرج في قاعدة البيانات');
+      return;
+    }
     setIsOpenNewModalOpen(false);
   };
 
@@ -285,6 +300,11 @@ export default function DrawerPage() {
           maxWidth="md"
         >
           <form onSubmit={handleCloseDrawer} className="space-y-4">
+            {drawerError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
+                {drawerError}
+              </div>
+            )}
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-slate-500">الرصيد المحسوب بالدفاتر (المتوقع):</span>
@@ -351,7 +371,7 @@ export default function DrawerPage() {
               />
             </div>
 
-            <Button type="submit" size="xl" variant="danger" className="w-full font-bold">
+            <Button type="submit" size="xl" variant="danger" isLoading={isDrawerSaving} disabled={isDrawerSaving} className="w-full font-bold">
               <Lock className="w-5 h-5 ml-2" />
               <span>تأكيد الإغلاق وقفل الدرج</span>
             </Button>
@@ -368,6 +388,11 @@ export default function DrawerPage() {
           maxWidth="sm"
         >
           <form onSubmit={handleOpenNewDrawer} className="space-y-4">
+            {drawerError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
+                {drawerError}
+              </div>
+            )}
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1">
                 رصيد الدرج الافتتاحي (الفكة / النقدية المودعة في الدرج) *
@@ -384,7 +409,7 @@ export default function DrawerPage() {
               />
             </div>
 
-            <Button type="submit" size="lg" variant="primary" className="w-full font-bold">
+            <Button type="submit" size="lg" variant="primary" isLoading={isDrawerSaving} disabled={isDrawerSaving} className="w-full font-bold">
               فتح الوردية الآن
             </Button>
           </form>

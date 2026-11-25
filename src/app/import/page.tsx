@@ -92,7 +92,7 @@ export default function ImportPage() {
   };
 
   // استيراد الصفوف الصالحة فقط من الشيت المحدد
-  const handleImportValidRowsOnly = () => {
+  const handleImportValidRowsOnly = async () => {
     if (sheetPreviews.length === 0) return;
     const current = sheetPreviews[selectedSheetIndex];
     const valResult = current.validationResult;
@@ -101,7 +101,11 @@ export default function ImportPage() {
       return;
     }
 
-    importDataFromExcel(current.detectedEntity, valResult.validData);
+    const res = await importDataFromExcel(current.detectedEntity, valResult.validData);
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ البيانات المستوردة في قاعدة البيانات');
+      return;
+    }
     setSuccessMessage(
       `تم بنجاح استيراد ${valResult.validCount} صف صالح من شيت "${current.sheetName}"! ` +
         (valResult.invalidCount > 0

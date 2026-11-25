@@ -36,6 +36,7 @@ interface PurchaseLineFormItem {
   productName: string;
   quantity: number;
   unitCost: number;
+  salePrice: number;
 }
 
 export default function SuppliersPage() {
@@ -84,7 +85,7 @@ export default function SuppliersPage() {
     notes: string;
     invoicePhotoUrl: string | null;
   }>({
-    items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0 }],
+    items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0, salePrice: 0 }],
     paymentMethod: 'cash',
     paidAmount: 0,
     isPaidAmountManual: false,
@@ -120,7 +121,7 @@ export default function SuppliersPage() {
       ...prev,
       items: [
         ...prev.items,
-        { isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0 },
+        { isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0, salePrice: 0 },
       ],
     }));
   };
@@ -168,29 +169,34 @@ export default function SuppliersPage() {
     );
   });
 
-  const handleSaveSupplier = (e: React.FormEvent) => {
+  const handleSaveSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSupplierData.name.trim()) return;
 
-    addSupplier({
+    const res = await addSupplier({
       name: newSupplierData.name.trim(),
       phone: newSupplierData.phone.trim(),
       initialBalance: newSupplierData.initialBalance,
       notes: '',
     });
 
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ المورد في قاعدة البيانات');
+      return;
+    }
+
     setIsAddSupplierOpen(false);
     setNewSupplierData({ name: '', phone: '', initialBalance: 0 });
   };
 
   // تأكيد سداد دفعة للمورد مع التاريخ
-  const handleConfirmSupplierPayment = (e: React.FormEvent) => {
+  const handleConfirmSupplierPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSupplier) return;
     const amt = parseFloat(paymentAmount);
     if (!amt || amt <= 0) return;
 
-    addSupplierPayment({
+    const res = await addSupplierPayment({
       supplierId: selectedSupplier.id,
       amount: amt,
       method: paymentMethod,
@@ -198,13 +204,18 @@ export default function SuppliersPage() {
       notes: paymentNotes,
     });
 
+    if (!res.ok) {
+      alert(res.error || 'تعذر تسجيل الدفعة للمورد في قاعدة البيانات');
+      return;
+    }
+
     setIsPaymentModalOpen(false);
     setPaymentAmount('');
     setPaymentNotes('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
   };
 
-  const handleCreatePurchase = (e: React.FormEvent) => {
+  const handleCreatePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSupplier) return;
 
@@ -216,7 +227,7 @@ export default function SuppliersPage() {
       return;
     }
 
-    createPurchaseInvoice({
+    const res = await createPurchaseInvoice({
       supplierId: selectedSupplier.id,
       supplierName: selectedSupplier.name,
       items: validItems.map((item) => ({
@@ -225,6 +236,7 @@ export default function SuppliersPage() {
         productName: item.isNew ? item.productName : undefined,
         quantity: item.quantity,
         unitCost: item.unitCost,
+        salePrice: item.isNew ? item.salePrice : undefined,
       })),
       paymentMethod: purchaseData.paymentMethod,
       paidAmount: purchaseData.paidAmount,
@@ -232,9 +244,14 @@ export default function SuppliersPage() {
       notes: purchaseData.notes,
     });
 
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ فاتورة التوريد في قاعدة البيانات');
+      return;
+    }
+
     setIsPurchaseModalOpen(false);
     setPurchaseData({
-      items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0 }],
+      items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0, salePrice: 0 }],
       paymentMethod: 'cash',
       paidAmount: 0,
       isPaidAmountManual: false,
@@ -247,7 +264,7 @@ export default function SuppliersPage() {
   const openPurchaseModal = (s: Supplier) => {
     setSelectedSupplier(s);
     setPurchaseData({
-      items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0 }],
+      items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0, salePrice: 0 }],
       paymentMethod: 'cash',
       paidAmount: 0,
       isPaidAmountManual: false,
@@ -667,13 +684,13 @@ export default function SuppliersPage() {
                               </span>
                             )}
                           </td>
-                          <td className="p-2.5 text-center font-mono font-bold text-rose-600">
+                          <td className="p-2.5 text-center font-mono font-bold text-rose-600" dir="ltr">
                             {row.debitOwed > 0 ? `+${formatCurrency(row.debitOwed)}` : '-'}
                           </td>
-                          <td className="p-2.5 text-center font-mono font-bold text-emerald-600">
+                          <td className="p-2.5 text-center font-mono font-bold text-emerald-600" dir="ltr">
                             {row.creditPaid > 0 ? `-${formatCurrency(row.creditPaid)}` : '-'}
                           </td>
-                          <td className="p-2.5 text-left font-mono font-black text-slate-900">
+                          <td className="p-2.5 text-left font-mono font-black text-slate-900" dir="ltr">
                             {formatCurrency(row.runningBalance)}
                           </td>
                         </tr>
@@ -750,7 +767,7 @@ export default function SuppliersPage() {
 
                   <div className="grid grid-cols-12 gap-2.5 items-end">
                     {/* حقل الصنف */}
-                    <div className="col-span-12 sm:col-span-6">
+                    <div className={item.isNew ? 'col-span-12 sm:col-span-5' : 'col-span-12 sm:col-span-6'}>
                       <label className="text-[11px] font-bold text-slate-700 block mb-1">
                         {item.isNew ? 'اسم الصنف الجديد *' : 'اختر الصنف من الكتالوج *'}
                       </label>
@@ -804,9 +821,9 @@ export default function SuppliersPage() {
                     </div>
 
                     {/* تكلفة الوحدة */}
-                    <div className="col-span-5 sm:col-span-3">
+                    <div className={item.isNew ? 'col-span-4 sm:col-span-2' : 'col-span-5 sm:col-span-3'}>
                       <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        سعر التكلفة للقطعة (ج.م)
+                        سعر التكلفة (ج.م)
                       </label>
                       <input
                         type="number"
@@ -815,15 +832,42 @@ export default function SuppliersPage() {
                         required
                         placeholder="0.00"
                         value={item.unitCost || ''}
-                        onChange={(e) =>
-                          updatePurchaseItem(idx, { unitCost: parseFloat(e.target.value) || 0 })
-                        }
+                        onChange={(e) => {
+                          const nextCost = parseFloat(e.target.value) || 0;
+                          updatePurchaseItem(idx, {
+                            unitCost: nextCost,
+                            ...(item.isNew && (!item.salePrice || item.salePrice === Number((item.unitCost * 1.25).toFixed(2)))
+                              ? { salePrice: Number((nextCost * 1.25).toFixed(2)) }
+                              : {}),
+                          });
+                        }}
                         className="w-full h-10 px-2 text-xs border rounded-xl text-center font-black text-brand-700"
                       />
                     </div>
 
+                    {/* سعر البيع للصنف الجديد */}
+                    {item.isNew && (
+                      <div className="col-span-4 sm:col-span-2">
+                        <label className="text-[11px] font-bold text-emerald-700 block mb-1">
+                          سعر البيع (ج.م)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          required
+                          placeholder="0.00"
+                          value={item.salePrice || ''}
+                          onChange={(e) =>
+                            updatePurchaseItem(idx, { salePrice: parseFloat(e.target.value) || 0 })
+                          }
+                          className="w-full h-10 px-2 text-xs border border-emerald-300 bg-emerald-50/30 rounded-xl text-center font-black text-emerald-700"
+                        />
+                      </div>
+                    )}
+
                     {/* حذف البند */}
-                    <div className="col-span-3 sm:col-span-1 text-center">
+                    <div className={item.isNew ? 'col-span-12 sm:col-span-1 text-center' : 'col-span-3 sm:col-span-1 text-center'}>
                       {purchaseData.items.length > 1 && (
                         <button
                           type="button"

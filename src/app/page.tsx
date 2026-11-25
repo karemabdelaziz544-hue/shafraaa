@@ -263,6 +263,51 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* بطاقة تفصيلية دائمة لنواقص المخزون */}
+      <Card className={lowStockProducts.length > 0 ? 'border-amber-300 bg-amber-50/30' : 'border-emerald-200 bg-emerald-50/20'}>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between w-full">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+              <Boxes className={`w-5 h-5 ${lowStockProducts.length > 0 ? 'text-amber-600' : 'text-emerald-600'}`} />
+              <span>بطاقة تنبيه نواقص المخزون</span>
+              <Badge variant={lowStockProducts.length > 0 ? 'warning' : 'success'}>
+                {lowStockProducts.length > 0 ? `${lowStockProducts.length} صنف ناقص` : 'المخزون آمن'}
+              </Badge>
+            </CardTitle>
+            <Link href="/products?filter=low-stock" className="text-xs text-brand-600 font-bold hover:underline">
+              عرض الكل
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 pt-2">
+          {lowStockProducts.length === 0 ? (
+            <p className="text-xs text-emerald-700 font-medium">
+              جميع الأصناف المتوفرة تتجاوز حد التنبيه الأدنى حالياً.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {lowStockProducts.slice(0, 6).map((prod) => (
+                <Link
+                  key={prod.id}
+                  href="/products?filter=low-stock"
+                  className="p-3 rounded-xl bg-white border border-amber-200 hover:border-amber-400 transition-all flex items-center justify-between gap-2"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">{prod.name}</p>
+                    <p className="text-[11px] text-slate-500">
+                      حد التنبيه: {prod.minStockAlert} {prod.unit}
+                    </p>
+                  </div>
+                  <Badge variant={prod.currentStock <= 0 ? 'danger' : 'warning'} className="shrink-0 font-mono">
+                    متاح: {prod.currentStock}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* شبكة الإجراءات السريعة عريضة اللمس */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-slate-800">إجراءات سريعة</h3>

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Printer, X, Tag, Settings2, Plus, Minus, Check } from 'lucide-react';
-import { Product } from '@/lib/store/shop-store';
+import React, { useEffect, useState } from 'react';
+import { Printer } from 'lucide-react';
+import { Product, useShop } from '@/lib/store/shop-store';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { generateBarcodeSvg } from '@/lib/barcode-generator';
@@ -19,18 +19,22 @@ export function BarcodeLabelPrinterModal({
   onClose,
   products,
 }: BarcodeLabelPrinterModalProps) {
-  // عدد النسخ لكل منتج
-  const [copies, setCopies] = useState<Record<string, number>>(() => {
-    const init: Record<string, number> = {};
-    products.forEach((p) => {
-      init[p.id] = 1;
-    });
-    return init;
-  });
-
+  const { shopName } = useShop();
+  const [copies, setCopies] = useState<Record<string, number>>({});
   const [labelSize, setLabelSize] = useState<'38x25' | '50x30' | 'a4-sheet'>('38x25');
   const [showPrice, setShowPrice] = useState(true);
   const [showShopName, setShowShopName] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCopies((prev) => {
+      const next: Record<string, number> = {};
+      products.forEach((p) => {
+        next[p.id] = prev[p.id] || 1;
+      });
+      return next;
+    });
+  }, [isOpen, products]);
 
   if (!isOpen || products.length === 0) return null;
 
@@ -58,21 +62,29 @@ export function BarcodeLabelPrinterModal({
     }
   });
 
+  // الطباعة المباشرة من نفس النافذة دون فتح تبويب about:blank
   const handlePrint = () => {
     window.print();
   };
+
+  const labelDims =
+    labelSize === '38x25'
+      ? { w: '38mm', h: '25mm' }
+      : labelSize === '50x30'
+      ? { w: '50mm', h: '30mm' }
+      : { w: '64mm', h: '34mm' };
 
   return (
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
       title="طباعة ملصقات الباركود والأسعار (Stickers)"
-      description="اختر عدد النسخ ومقاس الملصق ثم اضغط طباعة"
+      description="اختر عدد النسخ ومقاس الملصق ثم اضغط طباعة مباشرة من هذه النافذة"
       maxWidth="2xl"
     >
-      <div className="p-4 sm:p-6 space-y-5">
+      <div className="space-y-5">
         {/* شريط التحكم السريع */}
-        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs no-print">
           <div>
             <label className="font-bold text-slate-700 block mb-1">مقاس ورق الملصقات:</label>
             <select
@@ -128,7 +140,7 @@ export function BarcodeLabelPrinterModal({
         </div>
 
         {/* قائمة المنتجات وعدد النسخ لكل منها */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden max-h-44 overflow-y-auto">
+        <div className="border border-slate-200 rounded-xl overflow-hidden max-h-44 overflow-y-auto no-print">
           <table className="w-full text-right text-xs">
             <thead className="bg-slate-100 text-slate-700 font-bold border-b sticky top-0">
               <tr>
@@ -171,12 +183,12 @@ export function BarcodeLabelPrinterModal({
 
         {/* معاينة الملصقات قبل الطباعة */}
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 no-print">
             <h4 className="text-xs font-bold text-slate-700">
               معاينة ملصقات الباركود ({labelItems.length} ملصق):
             </h4>
             <span className="text-[11px] text-slate-400">
-              جاهز للطباعة على طابعات الباركود الحرارية (Xprinter / Zebra) أو ورق A4
+              جاهز للطباعة المباشرة على الطابعات الحرارية أو ورق A4
             </span>
           </div>
 
@@ -187,8 +199,8 @@ export function BarcodeLabelPrinterModal({
             {labelItems.map((prod, idx) => {
               const barcode = prod.barcode || '622100000000';
               const svgString = generateBarcodeSvg(barcode, {
-                height: 38,
-                barWidth: 1.4,
+                height: 36,
+                barWidth: 1.35,
                 showText: true,
                 fontSize: 10,
               });
@@ -196,18 +208,18 @@ export function BarcodeLabelPrinterModal({
               return (
                 <div
                   key={`${prod.id}-${idx}`}
-                  className="bg-white p-2 rounded-lg border border-slate-300 shadow-sm flex flex-col items-center justify-between text-center select-none aspect-[1.5/1]"
+                  className="sticker-item bg-white p-2 rounded-lg border border-slate-300 shadow-sm flex flex-col items-center justify-between text-center select-none aspect-[1.5/1]"
                 >
                   {showShopName && (
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">
-                      محل شفرة
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block truncate w-full">
+                      {shopName}
                     </span>
                   )}
                   <p className="text-[10px] font-bold text-slate-900 leading-tight line-clamp-1 w-full mt-0.5">
                     {prod.name}
                   </p>
                   <div
-                    className="w-full my-1 flex justify-center max-h-12"
+                    className="w-full my-0.5 flex justify-center max-h-12"
                     dangerouslySetInnerHTML={{ __html: svgString }}
                   />
                   {showPrice && (
@@ -222,8 +234,8 @@ export function BarcodeLabelPrinterModal({
         </div>
 
         {/* أزرار الإجراء */}
-        <div className="flex items-center justify-between pt-3 border-t">
-          <Button variant="ghost" size="md" onClick={onClose}>
+        <div className="flex items-center justify-between pt-3 border-t no-print">
+          <Button type="button" variant="ghost" size="md" onClick={onClose}>
             إلغاء
           </Button>
 
@@ -240,34 +252,37 @@ export function BarcodeLabelPrinterModal({
         </div>
       </div>
 
-      {/* تنسيقات الطباعة الخفية والمخصصة للطابعات الحرارية والورق */}
+      {/* تنسيقات الطباعة المعزولة مباشرة من المودال بدون فتح أي تبويب إضافي */}
       <style jsx global>{`
         @media print {
           body * {
-            visibility: hidden;
+            visibility: hidden !important;
           }
           #printable-barcode-labels,
           #printable-barcode-labels * {
-            visibility: visible;
+            visibility: visible !important;
           }
           #printable-barcode-labels {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-height: none !important;
+            overflow: visible !important;
             background: white !important;
             border: none !important;
-            padding: 0 !important;
+            padding: 2mm !important;
             margin: 0 !important;
             display: flex !important;
             flex-wrap: wrap !important;
-            gap: 4mm !important;
+            gap: 2mm !important;
           }
-          #printable-barcode-labels > div {
+          #printable-barcode-labels > .sticker-item {
             page-break-inside: avoid;
-            border: 1px dashed #ccc !important;
-            width: 48mm !important;
-            height: 28mm !important;
+            break-inside: avoid;
+            border: 1px dashed #cbd5e1 !important;
+            width: ${labelDims.w} !important;
+            height: ${labelDims.h} !important;
             padding: 1.5mm !important;
             box-shadow: none !important;
           }

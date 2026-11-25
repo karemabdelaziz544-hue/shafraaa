@@ -91,7 +91,7 @@ export default function DamagedInventoryPage() {
     setIsAddModalOpen(true);
   };
 
-  const handleSaveDamaged = (e: React.FormEvent) => {
+  const handleSaveDamaged = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.selectionMode === 'product' && !formData.productId) {
@@ -107,7 +107,7 @@ export default function DamagedInventoryPage() {
       return;
     }
 
-    addDamagedItem({
+    const res = await addDamagedItem({
       productId: formData.selectionMode === 'product' ? formData.productId : null,
       productName:
         formData.selectionMode === 'product'
@@ -119,6 +119,11 @@ export default function DamagedInventoryPage() {
       date: formData.date,
       notes: formData.notes,
     });
+
+    if (!res.ok) {
+      alert(res.error || 'تعذر تسجيل الهالك في قاعدة البيانات');
+      return;
+    }
 
     setIsAddModalOpen(false);
   };

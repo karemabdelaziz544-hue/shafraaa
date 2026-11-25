@@ -55,12 +55,16 @@ export default function InventoryPage() {
   };
 
   // حفظ مسودة الجرد
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     const items = Object.entries(countItems).map(([productId, countedStock]) => ({
       productId,
       countedStock,
     }));
-    savePhysicalCountDraft(items, countNotes);
+    const res = await savePhysicalCountDraft(items, countNotes);
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ مسودة الجرد');
+      return;
+    }
     setIsCountModalOpen(false);
   };
 

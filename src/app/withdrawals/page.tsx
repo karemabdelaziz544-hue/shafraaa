@@ -33,11 +33,15 @@ export default function WithdrawalsPage() {
 
   const totalWithdrawals = ownerWithdrawals.reduce((sum, w) => sum + w.amount, 0);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.amount <= 0 || !formData.reason.trim()) return;
 
-    addOwnerWithdrawal(formData);
+    const res = await addOwnerWithdrawal(formData);
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ مسحوبات المالك في قاعدة البيانات');
+      return;
+    }
     setIsAddModalOpen(false);
     setFormData({
       amount: 0,

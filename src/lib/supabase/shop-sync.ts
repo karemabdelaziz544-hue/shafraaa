@@ -6,6 +6,7 @@ import type {
   SupplierPayment,
   DamagedItem,
   SaleInvoice,
+  SaleReturn,
   PurchaseInvoice,
   Expense,
   OwnerWithdrawal,
@@ -23,6 +24,15 @@ export function generateUuid(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+}
+
+export function assertSupabaseOk<T extends { error: any }>(res: T, actionLabel: string): T {
+  if (res.error) {
+    const code = res.error.code ? ` [${res.error.code}]` : '';
+    const msg = res.error.message || 'خطأ غير معروف في قاعدة البيانات';
+    throw new Error(`${actionLabel}${code}: ${msg}`);
+  }
+  return res;
 }
 
 export async function uploadInvoicePhotoToStorage(
@@ -63,6 +73,7 @@ export interface LoadedShopPayload {
   supplierPayments: SupplierPayment[];
   damagedItems: DamagedItem[];
   salesInvoices: SaleInvoice[];
+  salesReturns: SaleReturn[];
   purchaseInvoices: PurchaseInvoice[];
   expenses: Expense[];
   ownerWithdrawals: OwnerWithdrawal[];
@@ -71,19 +82,34 @@ export interface LoadedShopPayload {
   auditLogs: AuditLog[];
 }
 
+export interface LoadShopResult {
+  payload: LoadedShopPayload | null;
+  error?: string;
+}
+
 export async function loadShopDataFromSupabase(
   supabase: SupabaseClient,
   userId: string
-): Promise<LoadedShopPayload | null> {
+): Promise<LoadShopResult> {
   const { data: profile, error: profError } = await supabase
     .from('profiles')
     .select('id, shop_id, full_name, role, shops(name, owner_name)')
     .eq('id', userId)
     .maybeSingle();
 
-  if (profError || !profile?.shop_id) {
-    console.error('Could not load user profile/shop:', profError?.message);
-    return null;
+  if (profError) {
+    const code = profError.code ? ` (${profError.code})` : '';
+    return {
+      payload: null,
+      error: `تعذر قراءة ملف المستخدم وصلاحية المتجر${code}: ${profError.message}`,
+    };
+  }
+
+  if (!profile?.shop_id) {
+    return {
+      payload: null,
+      error: 'هذا الحساب غير مربوط بمتجر (لا يوجد سجل في جدول profiles). يرجى تشغيل ملف الميجريشن وتخصيص shop_id للحساب.',
+    };
   }
 
   const shopId = profile.shop_id as string;
@@ -102,6 +128,7 @@ export async function loadShopDataFromSupabase(
     supPayRes,
     damagedRes,
     salesRes,
+    returnsRes,
     purchasesRes,
     expensesRes,
     withdrawalsRes,
@@ -145,6 +172,11 @@ export async function loadShopDataFromSupabase(
       .is('deleted_at', null)
       .order('created_at', { ascending: false }),
     supabase
+      .from('sales_returns')
+      .select('*, sales_return_items(*)')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false }),
+    supabase
       .from('purchase_invoices')
       .select('*, purchase_invoice_items(*)')
       .eq('shop_id', shopId)
@@ -179,6 +211,31 @@ export async function loadShopDataFromSupabase(
       .order('created_at', { ascending: false })
       .limit(100),
   ]);
+
+  const tableErrors = [
+    { name: 'products', err: productsRes.error },
+    { name: 'customers', err: customersRes.error },
+    { name: 'suppliers', err: suppliersRes.error },
+    { name: 'supplier_payments', err: supPayRes.error },
+    { name: 'damaged_items', err: damagedRes.error },
+    { name: 'sales_invoices', err: salesRes.error },
+    { name: 'sales_returns', err: returnsRes.error },
+    { name: 'purchase_invoices', err: purchasesRes.error },
+    { name: 'expenses', err: expensesRes.error },
+    { name: 'owner_withdrawals', err: withdrawalsRes.error },
+    { name: 'physical_inventory_counts', err: countsRes.error },
+    { name: 'drawer_sessions', err: drawersRes.error },
+    { name: 'audit_logs', err: logsRes.error },
+  ].filter((t) => t.err);
+
+  if (tableErrors.length > 0) {
+    const first = tableErrors[0];
+    const code = first.err?.code ? ` (${first.err.code})` : '';
+    return {
+      payload: null,
+      error: `فشل قراءة جدول ${first.name}${code}: ${first.err?.message || 'صلاحيات قاعدة البيانات مرفوضة'}. يرجى تشغيل ملف الميجريشن 5 لمنح الصلاحيات (GRANT / RLS).`,
+    };
+  }
 
   const suppliers: Supplier[] = (suppliersRes.data || []).map((s: any) => ({
     id: s.id,
@@ -256,6 +313,7 @@ export async function loadShopDataFromSupabase(
       productName: item.product_name,
       barcode: item.barcode || '',
       quantity: Number(item.quantity || 0),
+      returnedQuantity: Number(item.returned_quantity || 0),
       unitCost: Number(item.unit_cost || 0),
       unitPrice: Number(item.unit_price || 0),
       discount: Number(item.discount || 0),
@@ -276,6 +334,30 @@ export async function loadShopDataFromSupabase(
     status: inv.status || 'completed',
     createdAt: inv.created_at,
     deletedAt: inv.deleted_at,
+  }));
+
+  const salesReturns: SaleReturn[] = (returnsRes.data || []).map((ret: any) => ({
+    id: ret.id,
+    returnNumber: ret.return_number,
+    invoiceId: ret.invoice_id || null,
+    customerId: ret.customer_id || null,
+    refundAmount: Number(ret.refund_amount || 0),
+    refundMethod: ret.refund_method === 'credit_balance' ? 'credit' : ret.refund_method,
+    drawerSessionId: ret.drawer_session_id || null,
+    reason: ret.reason || '',
+    createdBy: ret.created_by || null,
+    createdByName: ret.created_by_name || ownerName,
+    createdAt: ret.created_at,
+    items: (ret.sales_return_items || []).map((ri: any) => ({
+      id: ri.id,
+      invoiceItemId: ri.invoice_item_id || null,
+      productId: ri.product_id,
+      productName: ri.product_name,
+      quantity: Number(ri.quantity || 0),
+      unitRefundPrice: Number(ri.unit_refund_price || 0),
+      unitCost: Number(ri.unit_cost || 0),
+      condition: ri.condition || 'sellable',
+    })),
   }));
 
   const purchaseInvoices: PurchaseInvoice[] = (purchasesRes.data || []).map((inv: any) => ({
@@ -381,21 +463,24 @@ export async function loadShopDataFromSupabase(
   }));
 
   return {
-    shopId,
-    shopName,
-    ownerName,
-    userRole,
-    products,
-    customers,
-    suppliers,
-    supplierPayments,
-    damagedItems,
-    salesInvoices,
-    purchaseInvoices,
-    expenses,
-    ownerWithdrawals,
-    physicalCounts,
-    drawerSessions,
-    auditLogs,
+    payload: {
+      shopId,
+      shopName,
+      ownerName,
+      userRole,
+      products,
+      customers,
+      suppliers,
+      supplierPayments,
+      damagedItems,
+      salesInvoices,
+      salesReturns,
+      purchaseInvoices,
+      expenses,
+      ownerWithdrawals,
+      physicalCounts,
+      drawerSessions,
+      auditLogs,
+    },
   };
 }

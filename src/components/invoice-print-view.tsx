@@ -1,47 +1,75 @@
 'use client';
 
 import React from 'react';
-import { Printer, X } from 'lucide-react';
-import { SaleInvoice } from '@/lib/store/shop-store';
+import { Printer, X, CheckCircle2 } from 'lucide-react';
+import { SaleInvoice, useShop } from '@/lib/store/shop-store';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 
 interface InvoicePrintViewProps {
   invoice: SaleInvoice;
   onClose: () => void;
+  showSuccessBanner?: boolean;
 }
 
-export function InvoicePrintView({ invoice, onClose }: InvoicePrintViewProps) {
+export function InvoicePrintView({ invoice, onClose, showSuccessBanner = false }: InvoicePrintViewProps) {
+  const { shopName, ownerName } = useShop();
+
   const handlePrint = () => {
     window.print();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-3 max-h-[92vh] overflow-y-auto">
+        {showSuccessBanner && (
+          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 no-print">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>تم حفظ الفاتورة وتحديث المخزون والدرج بنجاح!</span>
+          </div>
+        )}
+
         {/* أزرار التحكم العلوية (لا تظهر عند الطباعة) */}
         <div className="flex items-center justify-between no-print border-b pb-3">
-          <Button variant="primary" size="md" onClick={handlePrint} className="gap-2">
+          <Button type="button" variant="primary" size="md" onClick={handlePrint} className="gap-2">
             <Printer className="w-4 h-4" />
-            <span>طباعة الإيصال (Ctrl+P)</span>
+            <span>طباعة إيصال العميل</span>
           </Button>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* تصميم الإيصال الحراري 80mm */}
-        <div className="font-mono text-slate-900 text-xs space-y-3 p-2 border border-dashed border-slate-300 rounded-xl bg-slate-50/50">
+        {/* تصميم الإيصال الحراري 80mm المعزول للطباعة */}
+        <div
+          id="printable-receipt"
+          className="font-mono text-slate-900 text-xs space-y-3 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50/50"
+        >
           <div className="text-center space-y-1 border-b border-dashed pb-2">
-            <h2 className="text-base font-black">محل شفرة</h2>
-            <p className="text-[11px] text-slate-600">إدارة التجزئة - المالك: كريم</p>
+            <h2 className="text-base font-black">{shopName}</h2>
+            <p className="text-[11px] text-slate-600">إدارة التجزئة - المسؤول: {ownerName}</p>
             <p className="text-[10px] text-slate-500">{formatArabicDateTime(invoice.createdAt)}</p>
-            <p className="font-bold text-[11px]">رقم الفاتورة: {invoice.invoiceNumber}</p>
+            <p className="font-bold text-[11px]" dir="ltr">
+              #{invoice.invoiceNumber}
+            </p>
           </div>
 
           <div className="flex justify-between text-[11px] font-semibold border-b border-dashed pb-1">
             <span>العميل: {invoice.customerName}</span>
-            <span>طريقة الدفع: {invoice.paymentMethod === 'cash' ? 'كاش' : invoice.paymentMethod === 'wallet' ? 'محفظة' : invoice.paymentMethod === 'instapay' ? 'إنستاباي' : 'آجل'}</span>
+            <span>
+              الدفع:{' '}
+              {invoice.paymentMethod === 'cash'
+                ? 'كاش'
+                : invoice.paymentMethod === 'wallet'
+                ? 'محفظة'
+                : invoice.paymentMethod === 'instapay'
+                ? 'إنستاباي'
+                : 'آجل'}
+            </span>
           </div>
 
           {/* جدول البنود */}
@@ -95,11 +123,35 @@ export function InvoicePrintView({ invoice, onClose }: InvoicePrintViewProps) {
           </div>
 
           <div className="text-center text-[10px] text-slate-500 pt-2 border-t border-dashed">
-            <p>شكرًا لتعاملكم مع محل شفرة!</p>
+            <p>شكرًا لتعاملكم مع {shopName}!</p>
             <p>البضاعة المباعة ترد وتستبدل خلال 14 يومًا بالفاتورة</p>
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-receipt,
+          #printable-receipt * {
+            visibility: visible !important;
+          }
+          #printable-receipt {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 80mm !important;
+            margin: 0 auto !important;
+            padding: 4mm !important;
+            border: none !important;
+            background: white !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

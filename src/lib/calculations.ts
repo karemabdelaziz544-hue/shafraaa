@@ -267,3 +267,113 @@ export function checkCustomerCreditLimit(
     excessAmount,
   };
 }
+
+/**
+ * 9. قواعد المرتجع الصارمة على بنود الفاتورة:
+ * - حساب المتبقي القابل للإرجاع
+ * - منع إرجاع كمية أكبر من المتبقي
+ * - تحديد حالة الفاتورة (مكتملة / مرتجع جزئي / مرتجع بالكامل)
+ * - حساب تعديل دين العميل والرد النقدي
+ */
+export function calculateReturnableLineState(soldQuantity: number, returnedQuantity: number = 0) {
+  const sold = Number(Math.max(0, soldQuantity).toFixed(2));
+  const returned = Number(Math.max(0, returnedQuantity).toFixed(2));
+  const remainingReturnableQuantity = Number(Math.max(0, sold - returned).toFixed(2));
+  return {
+    soldQuantity: sold,
+    returnedQuantity: returned,
+    remainingReturnableQuantity,
+    isFullyReturned: remainingReturnableQuantity <= 0,
+  };
+}
+
+export function validateSaleReturnRequest(params: {
+  soldQuantity: number;
+  alreadyReturnedQuantity: number;
+  requestedQuantity: number;
+}): { valid: boolean; error?: string; remainingBeforeReturn: number; remainingAfterReturn: number } {
+  const state = calculateReturnableLineState(params.soldQuantity, params.alreadyReturnedQuantity);
+  const requested = Number((params.requestedQuantity || 0).toFixed(2));
+
+  if (requested <= 0) {
+    return {
+      valid: false,
+      error: 'يجب أن تكون الكمية المرتجعة أكبر من صفر.',
+      remainingBeforeReturn: state.remainingReturnableQuantity,
+      remainingAfterReturn: state.remainingReturnableQuantity,
+    };
+  }
+
+  if (state.remainingReturnableQuantity <= 0) {
+    return {
+      valid: false,
+      error: 'تم إرجاع كامل كمية هذا الصنف مسبقاً ولا توجد كمية متبقية للإرجاع.',
+      remainingBeforeReturn: 0,
+      remainingAfterReturn: 0,
+    };
+  }
+
+  if (requested > state.remainingReturnableQuantity) {
+    return {
+      valid: false,
+      error: `الكمية المطلوب إرجاعها (${requested}) أكبر من الكمية المتبقية القابلة للإرجاع (${state.remainingReturnableQuantity}).`,
+      remainingBeforeReturn: state.remainingReturnableQuantity,
+      remainingAfterReturn: state.remainingReturnableQuantity,
+    };
+  }
+
+  return {
+    valid: true,
+    remainingBeforeReturn: state.remainingReturnableQuantity,
+    remainingAfterReturn: Number((state.remainingReturnableQuantity - requested).toFixed(2)),
+  };
+}
+
+export function determineInvoiceReturnStatus(
+  items: Array<{ quantity: number; returnedQuantity?: number }>
+): 'completed' | 'returned_partial' | 'returned_full' {
+  const totalSold = items.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+  const totalReturned = items.reduce((sum, it) => sum + Number(it.returnedQuantity || 0), 0);
+
+  if (totalSold > 0 && totalReturned >= totalSold) {
+    return 'returned_full';
+  }
+  if (totalReturned > 0) {
+    return 'returned_partial';
+  }
+  return 'completed';
+}
+
+export function calculateReturnFinancialAdjustments(params: {
+  refundAmount: number;
+  refundMethod: 'cash' | 'wallet' | 'instapay' | 'credit';
+  customerCurrentBalance: number;
+  invoiceRemainingAmount: number;
+}): {
+  cashDrawerDeduction: number;
+  customerBalanceReduction: number;
+  newCustomerBalance: number;
+  invoiceRemainingReduction: number;
+  newInvoiceRemaining: number;
+} {
+  const refund = Number(Math.max(0, params.refundAmount).toFixed(2));
+  if (params.refundMethod === 'credit') {
+    const customerBalanceReduction = Number(Math.min(Math.max(0, params.customerCurrentBalance), refund).toFixed(2));
+    const invoiceRemainingReduction = Number(Math.min(Math.max(0, params.invoiceRemainingAmount), refund).toFixed(2));
+    return {
+      cashDrawerDeduction: 0,
+      customerBalanceReduction,
+      newCustomerBalance: Number((Math.max(0, params.customerCurrentBalance - customerBalanceReduction)).toFixed(2)),
+      invoiceRemainingReduction,
+      newInvoiceRemaining: Number((Math.max(0, params.invoiceRemainingAmount - invoiceRemainingReduction)).toFixed(2)),
+    };
+  }
+
+  return {
+    cashDrawerDeduction: params.refundMethod === 'cash' ? refund : 0,
+    customerBalanceReduction: 0,
+    newCustomerBalance: Number(Math.max(0, params.customerCurrentBalance).toFixed(2)),
+    invoiceRemainingReduction: 0,
+    newInvoiceRemaining: Number(Math.max(0, params.invoiceRemainingAmount).toFixed(2)),
+  };
+}

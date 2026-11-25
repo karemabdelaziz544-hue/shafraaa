@@ -128,33 +128,36 @@ function ProductsContent() {
     setIsAddModalOpen(true);
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    if (editingProduct) {
-      updateProduct(editingProduct.id, {
-        name: formData.name,
-        barcode: formData.barcode,
-        category: formData.category,
-        costPrice: formData.costPrice,
-        extraCost: formData.extraCost,
-        salePrice: formData.salePrice,
-        minStockAlert: formData.minStockAlert,
-        unit: formData.unit,
-      });
-    } else {
-      addProduct({
-        name: formData.name,
-        barcode: formData.barcode,
-        category: formData.category,
-        costPrice: formData.costPrice,
-        extraCost: formData.extraCost,
-        salePrice: formData.salePrice,
-        openingStock: formData.openingStock,
-        minStockAlert: formData.minStockAlert,
-        unit: formData.unit,
-      });
+    const res = editingProduct
+      ? await updateProduct(editingProduct.id, {
+          name: formData.name,
+          barcode: formData.barcode,
+          category: formData.category,
+          costPrice: formData.costPrice,
+          extraCost: formData.extraCost,
+          salePrice: formData.salePrice,
+          minStockAlert: formData.minStockAlert,
+          unit: formData.unit,
+        })
+      : await addProduct({
+          name: formData.name,
+          barcode: formData.barcode,
+          category: formData.category,
+          costPrice: formData.costPrice,
+          extraCost: formData.extraCost,
+          salePrice: formData.salePrice,
+          openingStock: formData.openingStock,
+          minStockAlert: formData.minStockAlert,
+          unit: formData.unit,
+        });
+
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ المنتج في قاعدة البيانات');
+      return;
     }
 
     setIsAddModalOpen(false);

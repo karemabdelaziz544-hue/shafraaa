@@ -57,11 +57,11 @@ export default function ExpensesPage() {
 
   const totalAll = totalFixed + totalVariable;
 
-  const handleSaveExpense = (e: React.FormEvent) => {
+  const handleSaveExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.category.trim() || formData.amount <= 0) return;
 
-    addExpense({
+    const res = await addExpense({
       type: formData.type,
       category: formData.category.trim(),
       amount: formData.amount,
@@ -69,6 +69,11 @@ export default function ExpensesPage() {
       date: formData.date,
       notes: formData.notes,
     });
+
+    if (!res.ok) {
+      alert(res.error || 'تعذر حفظ المصروف في قاعدة البيانات');
+      return;
+    }
 
     setIsAddModalOpen(false);
     setFormData({

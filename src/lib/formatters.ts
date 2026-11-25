@@ -2,16 +2,26 @@
  * دوال التنسيق المالي والمحلي المصري (EGP / ج.م)
  */
 
+const BIDI_CONTROL_REGEX = /[\u200B-\u200F\u202A-\u202E\u061C\uFEFF]/g;
+
+export function stripDirectionalMarks(value: string): string {
+  return value.replace(BIDI_CONTROL_REGEX, '');
+}
+
 export function formatCurrency(amount: number | string | null | undefined): string {
   if (amount === null || amount === undefined || isNaN(Number(amount))) {
     return '0.00 ج.م';
   }
   const num = Number(amount);
-  return new Intl.NumberFormat('ar-EG', {
-    style: 'decimal',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num) + ' ج.م';
+  const absFormatted = stripDirectionalMarks(
+    new Intl.NumberFormat('ar-EG', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Math.abs(num))
+  );
+  const sign = num < 0 ? '-' : '';
+  return `${sign}${absFormatted} ج.م`;
 }
 
 export function formatCurrencyEn(amount: number | string | null | undefined): string {
@@ -19,18 +29,26 @@ export function formatCurrencyEn(amount: number | string | null | undefined): st
     return '0.00 EGP';
   }
   const num = Number(amount);
-  return new Intl.NumberFormat('en-US', {
-    style: 'decimal',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num) + ' EGP';
+  const absFormatted = stripDirectionalMarks(
+    new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Math.abs(num))
+  );
+  const sign = num < 0 ? '-' : '';
+  return `${sign}${absFormatted} EGP`;
 }
 
 export function formatNumber(num: number | string | null | undefined): string {
   if (num === null || num === undefined || isNaN(Number(num))) {
     return '0';
   }
-  return new Intl.NumberFormat('ar-EG').format(Number(num));
+  const value = Number(num);
+  const absFormatted = stripDirectionalMarks(
+    new Intl.NumberFormat('ar-EG').format(Math.abs(value))
+  );
+  return value < 0 ? `-${absFormatted}` : absFormatted;
 }
 
 export function formatPercent(num: number | string | null | undefined): string {
