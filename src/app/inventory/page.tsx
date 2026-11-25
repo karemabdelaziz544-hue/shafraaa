@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 
 export default function InventoryPage() {
@@ -27,6 +28,7 @@ export default function InventoryPage() {
     physicalCounts,
     savePhysicalCountDraft,
     approvePhysicalCount,
+    isInitialLoading,
   } = useShop();
 
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
@@ -164,6 +166,9 @@ export default function InventoryPage() {
           <CardTitle>أرصدة المخزون وقيمتها بالتكلفة</CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
+          {isInitialLoading ? (
+            <TableSkeletonRows columns={6} rows={5} />
+          ) : (
           <table className="w-full text-right text-xs sm:text-sm">
             <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
               <tr>
@@ -211,6 +216,7 @@ export default function InventoryPage() {
               })}
             </tbody>
           </table>
+          )}
         </CardContent>
       </Card>
 

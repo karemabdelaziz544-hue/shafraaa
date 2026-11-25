@@ -13,10 +13,11 @@ import { useShop } from '@/lib/store/shop-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDate } from '@/lib/formatters';
 
 export default function WithdrawalsPage() {
-  const { ownerName, ownerWithdrawals, addOwnerWithdrawal } = useShop();
+  const { ownerName, ownerWithdrawals, addOwnerWithdrawal, isInitialLoading } = useShop();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formData, setFormData] = useState<{
@@ -80,7 +81,9 @@ export default function WithdrawalsPage() {
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          {ownerWithdrawals.length === 0 ? (
+          {isInitialLoading ? (
+            <TableSkeletonRows columns={4} rows={4} />
+          ) : ownerWithdrawals.length === 0 ? (
             <div className="p-10 text-center text-slate-400 text-xs">
               لا توجد مسحوبات شخصية مسجلة.
             </div>

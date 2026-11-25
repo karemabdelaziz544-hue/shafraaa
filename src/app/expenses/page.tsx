@@ -15,10 +15,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDate } from '@/lib/formatters';
 
 export default function ExpensesPage() {
-  const { expenses, addExpense } = useShop();
+  const { expenses, addExpense, isInitialLoading } = useShop();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'fixed' | 'variable'>('all');
@@ -203,7 +204,9 @@ export default function ExpensesPage() {
       {/* جدول المصروفات */}
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          {filteredExpenses.length === 0 ? (
+          {isInitialLoading ? (
+            <TableSkeletonRows columns={5} rows={5} />
+          ) : filteredExpenses.length === 0 ? (
             <div className="p-12 text-center text-slate-400 text-sm">
               لا توجد مصروفات مسجلة في هذا الشهر.
             </div>

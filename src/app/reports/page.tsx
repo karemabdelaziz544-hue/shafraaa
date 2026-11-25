@@ -1,26 +1,31 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import * as XLSX from 'xlsx';
 import {
   BarChart3,
-  TrendingUp,
   Download,
   Calendar,
   DollarSign,
   Package,
-  Users,
-  Truck,
   Printer,
-  Sparkles,
-  AlertOctagon,
 } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Skeleton, FormReportSkeleton } from '@/components/ui/skeleton';
+import { AnimatedNumber } from '@/components/motion/animated-number';
 import { calculatePeriodNetProfit } from '@/lib/calculations';
-import { formatCurrency, formatPercent, formatArabicDate } from '@/lib/formatters';
+import { formatCurrency } from '@/lib/formatters';
+
+const Sales7DayChart = dynamic(
+  () => import('@/components/reports/sales-7day-chart').then((mod) => mod.Sales7DayChart),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-56 w-full rounded-2xl" />,
+  }
+);
 
 export default function ReportsPage() {
   const {
@@ -32,10 +37,15 @@ export default function ReportsPage() {
     expenses,
     ownerWithdrawals,
     damagedItems,
+    isInitialLoading,
   } = useShop();
 
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | 'all'>('month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+
+  if (isInitialLoading) {
+    return <FormReportSkeleton />;
+  }
 
   // تصفية العمليات حسب الفترة المحددة
   const filteredSales = salesInvoices.filter((inv) => {
@@ -259,7 +269,7 @@ export default function ReportsPage() {
               صافي الربح الفعلي للفترة
             </span>
             <div className="text-2xl sm:text-3xl font-black font-mono">
-              {formatCurrency(netProfitResult.netProfit)}
+              <AnimatedNumber value={netProfitResult.netProfit} />
             </div>
             <p className="text-[11px] text-emerald-100 mt-2">
               مجمل الربح - المصروفات - خسائر الهالك
@@ -272,7 +282,7 @@ export default function ReportsPage() {
           <CardContent className="p-5">
             <span className="text-xs font-bold text-slate-500 block mb-1">إجمالي المبيعات</span>
             <div className="text-2xl font-black text-slate-900 font-mono">
-              {formatCurrency(totalSalesRevenue)}
+              <AnimatedNumber value={totalSalesRevenue} />
             </div>
             <p className="text-xs text-slate-500 mt-1">عدد الفواتير: {filteredSales.length}</p>
           </CardContent>
@@ -285,7 +295,7 @@ export default function ReportsPage() {
               تكلفة البضاعة المباعة (COGS)
             </span>
             <div className="text-2xl font-black text-slate-700 font-mono">
-              {formatCurrency(totalCostOfGoodsSold)}
+              <AnimatedNumber value={totalCostOfGoodsSold} />
             </div>
             <p className="text-xs text-slate-500 mt-1">
               مجمل الربح: <span className="font-bold text-emerald-600">{formatCurrency(totalGrossProfit)}</span>
@@ -298,7 +308,7 @@ export default function ReportsPage() {
           <CardContent className="p-5">
             <span className="text-xs font-bold text-slate-500 block mb-1">إجمالي المصروفات</span>
             <div className="text-2xl font-black text-rose-600 font-mono">
-              {formatCurrency(netProfitResult.totalExpenses)}
+              <AnimatedNumber value={netProfitResult.totalExpenses} />
             </div>
             <p className="text-xs text-slate-500 mt-1">
               ثابتة: {fixedExpenses} | متغيرة: {variableExpenses}
@@ -311,7 +321,7 @@ export default function ReportsPage() {
           <CardContent className="p-5">
             <span className="text-xs font-bold text-slate-500 block mb-1">خسائر الهالك والتوالف</span>
             <div className="text-2xl font-black text-amber-700 font-mono">
-              {formatCurrency(totalDamagedLoss)}
+              <AnimatedNumber value={totalDamagedLoss} />
             </div>
             <p className="text-xs text-slate-500 mt-1">
               عدد البنود: {filteredDamaged.length} بند
@@ -320,36 +330,8 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* رسم بياني لمبيعات آخر 7 أيام */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-bold flex items-center justify-between w-full">
-            <span>مبيعات آخر ٧ أيام (حركة المبيعات اليومية)</span>
-            <Badge variant="info">مباشر</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-5">
-          <div className="h-44 flex items-end justify-between gap-2 sm:gap-6 pt-4">
-            {last7Days.map((day) => {
-              const heightPercent = Math.max(10, Math.min(100, (day.total / maxDailySales) * 100));
-              return (
-                <div key={day.date} className="flex-1 flex flex-col items-center gap-2 group">
-                  <span className="text-[10px] font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {formatCurrency(day.total)}
-                  </span>
-                  <div className="w-full bg-slate-100 rounded-xl h-32 flex items-end overflow-hidden p-1">
-                    <div
-                      style={{ height: `${heightPercent}%` }}
-                      className="w-full bg-brand-600 hover:bg-brand-500 rounded-lg transition-all"
-                    />
-                  </div>
-                  <span className="text-xs font-bold text-slate-700">{day.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* رسم بياني محمّل كسولاً لمبيعات آخر 7 أيام */}
+      <Sales7DayChart days={last7Days} maxDailySales={maxDailySales} />
 
       {/* قائمتان متجاورتان: الأصناف الأكثر مبيعاً + أرصدة الأصول والديون */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

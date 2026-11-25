@@ -68,8 +68,9 @@ export function DesktopSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               className={cn(
-                'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all group',
+                'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-[transform,background-color,color] duration-150 active:scale-[0.98] group',
                 isActive
                   ? 'bg-brand-600 text-white shadow-sm shadow-brand-500/20 font-semibold'
                   : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',

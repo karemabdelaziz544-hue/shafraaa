@@ -12,6 +12,7 @@ import {
 } from '@/lib/calculations';
 import { generateUniqueBarcode } from '@/lib/barcode-generator';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/motion/toast-provider';
 import {
   assertSupabaseOk,
   generateUuid,
@@ -267,6 +268,7 @@ interface ShopContextType {
   syncError: string | null;
   clearSyncError: () => void;
   isSaving: boolean;
+  isInitialLoading: boolean;
   isAuthChecking: boolean;
   isAuthenticated: boolean;
   refreshFromCloud: () => Promise<boolean>;
@@ -534,6 +536,7 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export function ShopProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { successToast, errorToast } = useToast();
   const supabase = useMemo(() => createClient(), []);
   const isSupabaseConfigured = Boolean(supabase);
 
@@ -798,11 +801,12 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     router.replace('/login');
   }, [supabase, clearShopState, router]);
 
-  // تنفيذ حقيقي ومؤكد لعمليات الكتابة في Supabase مع إعادة القراءة
+  // تنفيذ حقيقي ومؤكد لعمليات الكتابة في Supabase مع إعادة القراءة وإشعارات التوست
   const runSupabaseWrite = useCallback(
     async (
       actionLabel: string,
-      fn: (sb: NonNullable<typeof supabase>, sId: string, uId: string) => Promise<void>
+      fn: (sb: NonNullable<typeof supabase>, sId: string, uId: string) => Promise<void>,
+      successMsg?: string
     ): Promise<ActionResult> => {
       if (!supabase) return { ok: true };
       if (!shopId || !userId) {
@@ -810,6 +814,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           cloudError ||
           'تعذر الحفظ: الحساب غير مربوط بمتجر أو صلاحيات Supabase غير مفعلة. يرجى مراجعة الإعدادات.';
         setSyncError(msg);
+        errorToast(msg);
         return { ok: false, error: msg };
       }
       setIsSaving(true);
@@ -817,17 +822,19 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       try {
         await fn(supabase, shopId, userId);
         await hydrateFromSupabase(userId, userEmail, { silent: true });
+        successToast(successMsg || `تم ${actionLabel} وحفظ البيانات بنجاح`);
         return { ok: true };
       } catch (err: any) {
         const msg = err?.message || `فشل تنفيذ "${actionLabel}" في قاعدة البيانات`;
         console.error(`Supabase write failed (${actionLabel}):`, err);
         setSyncError(msg);
+        errorToast(msg);
         return { ok: false, error: msg };
       } finally {
         setIsSaving(false);
       }
     },
-    [supabase, shopId, userId, userEmail, cloudError, hydrateFromSupabase]
+    [supabase, shopId, userId, userEmail, cloudError, hydrateFromSupabase, successToast, errorToast]
   );
 
   const activeDrawer = drawerSessions.find((s) => s.status === 'open') || null;
@@ -879,10 +886,14 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       setProducts((prev) => [newProduct, ...prev]);
       pushLocalAudit('CREATE', 'products', `إضافة منتج جديد: ${newProduct.name}`);
+      successToast(`تم إضافة الصنف "${newProduct.name}" بنجاح`);
       return { ok: true };
     }
 
-    return runSupabaseWrite('إضافة منتج', async (sb, sId, uId) => {
+    const prevProducts = products;
+    setProducts((prev) => [newProduct, ...prev]);
+
+    const res = await runSupabaseWrite('إضافة منتج', async (sb, sId, uId) => {
       assertSupabaseOk(
         await sb.from('products').insert({
           id: prodId,
@@ -902,16 +913,22 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       );
       await insertAuditRow(sb, sId, uId, 'CREATE', 'products', `إضافة منتج جديد: ${newProduct.name}`, prodId);
     });
+    if (!res.ok) setProducts(prevProducts);
+    return res;
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>): Promise<ActionResult> => {
     if (!supabase) {
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
       pushLocalAudit('UPDATE', 'products', `تعديل بيانات المنتج معرف: ${id}`);
+      successToast('تم حفظ تعديل الصنف بنجاح');
       return { ok: true };
     }
 
-    return runSupabaseWrite('تعديل منتج', async (sb, sId, uId) => {
+    const prevProducts = products;
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+
+    const res = await runSupabaseWrite('تعديل منتج', async (sb, sId, uId) => {
       const dbUpdates: Record<string, any> = { updated_at: new Date().toISOString() };
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.barcode !== undefined) dbUpdates.barcode = updates.barcode;
@@ -928,6 +945,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       );
       await insertAuditRow(sb, sId, uId, 'UPDATE', 'products', `تعديل بيانات المنتج معرف: ${id}`, id);
     });
+    if (!res.ok) setProducts(prevProducts);
+    return res;
   };
 
   const deleteProduct = async (id: string): Promise<ActionResult> => {
@@ -935,16 +954,22 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, deletedAt } : p)));
       pushLocalAudit('DELETE', 'products', `حذف منتج معرف: ${id}`);
+      successToast('تم حذف الصنف بنجاح');
       return { ok: true };
     }
 
-    return runSupabaseWrite('حذف منتج', async (sb, sId, uId) => {
+    const prevProducts = products;
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, deletedAt } : p)));
+
+    const res = await runSupabaseWrite('حذف منتج', async (sb, sId, uId) => {
       assertSupabaseOk(
         await sb.from('products').update({ deleted_at: deletedAt }).eq('id', id).eq('shop_id', sId),
         'حذف المنتج'
       );
       await insertAuditRow(sb, sId, uId, 'DELETE', 'products', `حذف منتج (Soft Delete) معرف: ${id}`, id);
     });
+    if (!res.ok) setProducts(prevProducts);
+    return res;
   };
 
   // 2. العملاء
@@ -965,8 +990,12 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       setCustomers((prev) => [newCustomer, ...prev]);
       pushLocalAudit('CREATE', 'customers', `إضافة عميل جديد: ${newCustomer.name}`);
+      successToast(`تم إضافة العميل "${newCustomer.name}"`);
       return { ok: true, customer: newCustomer };
     }
+
+    const prevCustomers = customers;
+    setCustomers((prev) => [newCustomer, ...prev]);
 
     const res = await runSupabaseWrite('إضافة عميل', async (sb, sId, uId) => {
       assertSupabaseOk(
@@ -983,6 +1012,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       );
       await insertAuditRow(sb, sId, uId, 'CREATE', 'customers', `إضافة عميل جديد: ${newCustomer.name}`, custId);
     });
+    if (!res.ok) setCustomers(prevCustomers);
     return { ...res, customer: res.ok ? newCustomer : undefined };
   };
 
@@ -2183,11 +2213,29 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         );
       }
       pushLocalAudit('CREATE', 'expenses', `صرف مصروف: ${data.category}`);
+      successToast(`تم تسجيل المصروف "${data.category}"`);
       return { ok: true };
     }
 
+    const prevExpenses = expenses;
+    const prevDrawers = drawerSessions;
+    setExpenses((prev) => [newExpense, ...prev]);
+    if (activeDrawer && drawerExpUpdate) {
+      setDrawerSessions((prev) =>
+        prev.map((d) =>
+          d.id === activeDrawer.id
+            ? {
+                ...d,
+                cashExpenses: drawerExpUpdate!.cash_expenses,
+                expectedCash: drawerExpUpdate!.expected_cash,
+              }
+            : d
+        )
+      );
+    }
+
     const activeDrawerId = activeDrawer?.id || null;
-    return runSupabaseWrite('إضافة مصروف', async (sb, sId, uId) => {
+    const res = await runSupabaseWrite('إضافة مصروف', async (sb, sId, uId) => {
       assertSupabaseOk(
         await sb.from('expenses').insert({
           id: expId,
@@ -2223,6 +2271,11 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         expId
       );
     });
+    if (!res.ok) {
+      setExpenses(prevExpenses);
+      setDrawerSessions(prevDrawers);
+    }
+    return res;
   };
 
   // 8. مسحوبات المالك
@@ -2480,10 +2533,14 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       setDrawerSessions((prev) => [newSession, ...prev]);
       pushLocalAudit('OPEN', 'drawer_sessions', `فتح وردية درج برصيد ${openingCash} ج.م`);
+      successToast('تم فتح وردية الدرج بنجاح');
       return { ok: true };
     }
 
-    return runSupabaseWrite('فتح وردية الدرج', async (sb, sId, uId) => {
+    const prevDrawers = drawerSessions;
+    setDrawerSessions((prev) => [newSession, ...prev]);
+
+    const res = await runSupabaseWrite('فتح وردية الدرج', async (sb, sId, uId) => {
       assertSupabaseOk(
         await sb.from('drawer_sessions').insert({
           id: drawerId,
@@ -2506,6 +2563,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         drawerId
       );
     });
+    if (!res.ok) setDrawerSessions(prevDrawers);
+    return res;
   };
 
   const closeDrawerSession = async (
@@ -2535,10 +2594,27 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         )
       );
       pushLocalAudit('CLOSE', 'drawer_sessions', `إغلاق الدرج بفارق ${difference} ج.م`);
+      successToast('تم إغلاق الدرج وحفظ اليومية');
       return { ok: true };
     }
 
-    return runSupabaseWrite('إغلاق الدرج', async (sb, sId, uId) => {
+    const prevDrawers = drawerSessions;
+    setDrawerSessions((prev) =>
+      prev.map((d) =>
+        d.id === targetId
+          ? {
+              ...d,
+              status: 'closed',
+              closedAt,
+              actualCash: actual,
+              difference,
+              closingNotes: closingNotes || '',
+            }
+          : d
+      )
+    );
+
+    const res = await runSupabaseWrite('إغلاق الدرج', async (sb, sId, uId) => {
       assertSupabaseOk(
         await sb
           .from('drawer_sessions')
@@ -2564,6 +2640,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         targetId
       );
     });
+    if (!res.ok) setDrawerSessions(prevDrawers);
+    return res;
   };
 
   const reopenDrawerSession = async (sessionId?: string): Promise<ActionResult> => {
@@ -2586,10 +2664,20 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         )
       );
       pushLocalAudit('REOPEN', 'drawer_sessions', `إعادة فتح الدرج المغلق بواسطة ${ownerName}`);
+      successToast('تم إعادة فتح الدرج بنجاح');
       return { ok: true };
     }
 
-    return runSupabaseWrite('إعادة فتح الدرج', async (sb, sId, uId) => {
+    const prevDrawers = drawerSessions;
+    setDrawerSessions((prev) =>
+      prev.map((d) =>
+        d.id === targetId
+          ? { ...d, status: 'open', reopenedAt: timestamp, reopenedBy: ownerName, closedAt: null }
+          : d
+      )
+    );
+
+    const res = await runSupabaseWrite('إعادة فتح الدرج', async (sb, sId, uId) => {
       assertSupabaseOk(
         await sb
           .from('drawer_sessions')
@@ -2613,6 +2701,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         targetId
       );
     });
+    if (!res.ok) setDrawerSessions(prevDrawers);
+    return res;
   };
 
   // 11. استيراد الإكسيل
@@ -2889,6 +2979,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         syncError,
         clearSyncError,
         isSaving,
+        isInitialLoading: !isLoaded || isAuthChecking,
         isAuthChecking,
         isAuthenticated,
         refreshFromCloud,

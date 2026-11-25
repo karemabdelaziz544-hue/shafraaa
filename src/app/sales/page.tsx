@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   Receipt,
   Plus,
@@ -14,12 +15,17 @@ import {
 } from 'lucide-react';
 import { useShop, SaleInvoice, SaleInvoiceItem } from '@/lib/store/shop-store';
 import { validateSaleReturnRequest, calculateReturnableLineState } from '@/lib/calculations';
-import { Button } from '@/components/ui/button';
+import { Button, SaveButtonState } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
-import { InvoicePrintView } from '@/components/invoice-print-view';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
+
+const InvoicePrintView = dynamic(
+  () => import('@/components/invoice-print-view').then((mod) => mod.InvoicePrintView),
+  { ssr: false }
+);
 
 function getInvoiceStatusBadge(status: SaleInvoice['status']) {
   if (status === 'returned_full') {
@@ -35,7 +41,7 @@ function getInvoiceStatusBadge(status: SaleInvoice['status']) {
 }
 
 export default function SalesHistoryPage() {
-  const { salesInvoices, salesReturns, ownerName, createSaleReturn } = useShop();
+  const { salesInvoices, salesReturns, ownerName, createSaleReturn, isInitialLoading } = useShop();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
@@ -43,7 +49,8 @@ export default function SalesHistoryPage() {
 
   // حالة نافذة المرتجع
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
-  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+  const [returnSaveState, setReturnSaveState] = useState<SaveButtonState>('idle');
+  const returnLockRef = useRef(false);
   const [returnError, setReturnError] = useState<string | null>(null);
   const [returnSuccess, setReturnSuccess] = useState<string | null>(null);
   const [returnItem, setReturnItem] = useState<{
@@ -105,7 +112,7 @@ export default function SalesHistoryPage() {
     : { valid: false, error: '' };
 
   const handleConfirmReturn = async () => {
-    if (!returnItem) return;
+    if (!returnItem || returnLockRef.current) return;
     setReturnError(null);
 
     const check = validateSaleReturnRequest({
@@ -118,8 +125,9 @@ export default function SalesHistoryPage() {
       return;
     }
 
+    returnLockRef.current = true;
     const refundAmount = Number((parsedReturnQty * returnItem.unitPrice).toFixed(2));
-    setIsSubmittingReturn(true);
+    setReturnSaveState('saving');
     const res = await createSaleReturn({
       invoiceId: returnItem.invoiceId,
       invoiceItemId: returnItem.invoiceItemId,
@@ -130,16 +138,22 @@ export default function SalesHistoryPage() {
       isSellable: returnItem.isSellable,
       reason: returnItem.reason,
     });
-    setIsSubmittingReturn(false);
 
     if (!res.ok) {
+      setReturnSaveState('idle');
+      returnLockRef.current = false;
       setReturnError(res.error || 'تعذر تنفيذ المرتجع، يرجى المحاولة مرة أخرى');
       return;
     }
 
+    setReturnSaveState('saved');
     setReturnSuccess(`تم تسجيل مرتجع ${parsedReturnQty} من "${returnItem.productName}" بقيمة ${formatCurrency(refundAmount)} بنجاح.`);
-    setIsReturnModalOpen(false);
-    setReturnItem(null);
+    setTimeout(() => {
+      setReturnSaveState('idle');
+      returnLockRef.current = false;
+      setIsReturnModalOpen(false);
+      setReturnItem(null);
+    }, 450);
   };
 
   const selectedInvoiceReturns = selectedInvoice
@@ -194,7 +208,9 @@ export default function SalesHistoryPage() {
       {/* قائمة الفواتير */}
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          {filteredInvoices.length === 0 ? (
+          {isInitialLoading ? (
+            <TableSkeletonRows columns={8} rows={6} />
+          ) : filteredInvoices.length === 0 ? (
             <div className="p-12 text-center text-slate-400 text-sm">
               لا توجد فواتير مبيعات مطابقة للبحث.
             </div>
@@ -529,8 +545,9 @@ export default function SalesHistoryPage() {
             <Button
               size="lg"
               variant="danger"
-              isLoading={isSubmittingReturn}
-              disabled={!liveReturnValidation.valid || isSubmittingReturn}
+              saveState={returnSaveState}
+              savedText="تم تسجيل المرتجع"
+              disabled={!liveReturnValidation.valid}
               onClick={handleConfirmReturn}
               className="w-full font-bold"
             >

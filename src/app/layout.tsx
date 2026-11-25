@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { MotionProvider } from '@/components/motion/motion-provider';
 import { ShopProvider } from '@/lib/store/shop-store';
 import { AppShell } from '@/components/layout/app-shell';
 
@@ -34,9 +35,11 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-slate-50 font-cairo antialiased flex flex-col lg:flex-row">
-        <ShopProvider>
-          <AppShell>{children}</AppShell>
-        </ShopProvider>
+        <MotionProvider>
+          <ShopProvider>
+            <AppShell>{children}</AppShell>
+          </ShopProvider>
+        </MotionProvider>
       </body>
     </html>
   );

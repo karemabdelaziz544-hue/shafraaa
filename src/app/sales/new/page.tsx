@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   ShoppingCart,
   Search,
@@ -18,14 +20,25 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useShop, Product } from '@/lib/store/shop-store';
-import { Button } from '@/components/ui/button';
+import { Button, SaveButtonState } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
-import { BarcodeScannerModal } from '@/components/barcode-scanner-modal';
-import { InvoicePrintView } from '@/components/invoice-print-view';
+import { PosSkeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/motion/toast-provider';
+import { LIST_ITEM_TRANSITION } from '@/lib/motion';
 import { formatCurrency, formatPercent, formatArabicDateTime } from '@/lib/formatters';
+
+const BarcodeScannerModal = dynamic(
+  () => import('@/components/barcode-scanner-modal').then((mod) => mod.BarcodeScannerModal),
+  { ssr: false }
+);
+
+const InvoicePrintView = dynamic(
+  () => import('@/components/invoice-print-view').then((mod) => mod.InvoicePrintView),
+  { ssr: false }
+);
 
 interface CartItem {
   product: Product;
@@ -43,7 +56,9 @@ export default function NewSalePage() {
     drawerSessions,
     reopenDrawerSession,
     addCustomer,
+    isInitialLoading,
   } = useShop();
+  const { successToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
@@ -61,7 +76,14 @@ export default function NewSalePage() {
   const [newCustName, setNewCustName] = useState('');
   const [newCustPhone, setNewCustPhone] = useState('');
   const [addCustError, setAddCustError] = useState('');
-  const [isSavingSale, setIsSavingSale] = useState(false);
+  const [saleSaveState, setSaleSaveState] = useState<SaveButtonState>('idle');
+  const [custSaveState, setCustSaveState] = useState<SaveButtonState>('idle');
+  const saleLockRef = useRef(false);
+  const custLockRef = useRef(false);
+
+  if (isInitialLoading) {
+    return <PosSkeleton />;
+  }
 
   // حالة إغلاق الدرج وحظره
   const isDrawerClosed = !activeDrawer || activeDrawer.status !== 'open';
@@ -69,10 +91,13 @@ export default function NewSalePage() {
 
   const handleQuickAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (custLockRef.current) return;
     if (!newCustName.trim()) {
       setAddCustError('يرجى إدخال اسم العميل');
       return;
     }
+    custLockRef.current = true;
+    setCustSaveState('saving');
     const res = await addCustomer({
       name: newCustName.trim(),
       phone: newCustPhone.trim(),
@@ -81,14 +106,21 @@ export default function NewSalePage() {
       notes: 'تمت الإضافة سريعاً من شاشة نقطة البيع',
     });
     if (!res.ok || !res.customer) {
+      setCustSaveState('idle');
+      custLockRef.current = false;
       setAddCustError(res.error || 'تعذر حفظ العميل في قاعدة البيانات');
       return;
     }
+    setCustSaveState('saved');
     setSelectedCustomerId(res.customer.id);
-    setIsAddCustomerOpen(false);
-    setNewCustName('');
-    setNewCustPhone('');
-    setAddCustError('');
+    setTimeout(() => {
+      setCustSaveState('idle');
+      custLockRef.current = false;
+      setIsAddCustomerOpen(false);
+      setNewCustName('');
+      setNewCustPhone('');
+      setAddCustError('');
+    }, 450);
   };
 
   // البحث والتصفية في المنتجات
@@ -102,7 +134,7 @@ export default function NewSalePage() {
     );
   });
 
-  // إضافة منتج للسلة
+  // إضافة منتج للسلة (تحديث متفائل فوري)
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
@@ -123,6 +155,7 @@ export default function NewSalePage() {
         },
       ];
     });
+    successToast(`أضيف "${product.name}" إلى السلة`);
   };
 
   // تعديل كمية
@@ -177,8 +210,9 @@ export default function NewSalePage() {
     : totalAmount;
   const remainingDebt = Math.max(0, totalAmount - actualPaidAmount);
 
-  // إتمام وحفظ الفاتورة
+  // إتمام وحفظ الفاتورة مع منع التكرار (Double-submit Guard)
   const handleCompleteSale = async () => {
+    if (saleLockRef.current) return;
     if (isDrawerClosed) {
       setInvoiceWarning('الدرج مقفل حالياً! لا يمكن إصدار فاتورة بيع جديدة قبل إعادة فتح الدرج بواسطة المالك.');
       return;
@@ -191,7 +225,8 @@ export default function NewSalePage() {
       return;
     }
 
-    setIsSavingSale(true);
+    saleLockRef.current = true;
+    setSaleSaveState('saving');
     const { ok, invoice, warning, error } = await createSaleInvoice({
       customerId: selectedCustomerId || null,
       items: cart.map((item) => ({
@@ -204,13 +239,15 @@ export default function NewSalePage() {
       paymentMethod,
       paidAmount: actualPaidAmount,
     });
-    setIsSavingSale(false);
 
     if (!ok || !invoice) {
+      setSaleSaveState('idle');
+      saleLockRef.current = false;
       setInvoiceWarning(error || warning || 'تعذر حفظ الفاتورة في قاعدة البيانات.');
       return;
     }
 
+    setSaleSaveState('saved');
     if (warning) {
       setInvoiceWarning(warning);
     } else {
@@ -223,6 +260,10 @@ export default function NewSalePage() {
     setOverallDiscount(0);
     setIsPaidAmountManual(false);
     setPaidAmountInput('');
+    setTimeout(() => {
+      setSaleSaveState('idle');
+      saleLockRef.current = false;
+    }, 800);
   };
 
   return (
@@ -416,56 +457,68 @@ export default function NewSalePage() {
                     السلة فارغة. اضغط على أي صنف من القائمة لإضافته.
                   </div>
                 ) : (
-                  cart.map((item) => (
-                    <div key={item.product.id} className="pt-2 flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">
-                          {item.product.name}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <input
-                            type="number"
-                            value={item.unitPrice}
-                            onChange={(e) =>
-                              updateUnitPrice(item.product.id, parseFloat(e.target.value) || 0)
-                            }
-                            className="w-20 h-7 text-xs px-1.5 border border-slate-200 rounded text-center font-bold"
-                            title="تعديل سعر البيع لهذا البند"
-                          />
-                          <span className="text-[11px] text-slate-400">ج.م/قطعة</span>
+                  <AnimatePresence initial={false}>
+                    {cart.map((item) => (
+                      <m.div
+                        key={item.product.id}
+                        initial={LIST_ITEM_TRANSITION.initial}
+                        animate={LIST_ITEM_TRANSITION.animate}
+                        exit={LIST_ITEM_TRANSITION.exit}
+                        transition={LIST_ITEM_TRANSITION.transition}
+                        className="pt-2 flex items-center justify-between gap-2"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {item.product.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <input
+                              type="number"
+                              value={item.unitPrice}
+                              onChange={(e) =>
+                                updateUnitPrice(item.product.id, parseFloat(e.target.value) || 0)
+                              }
+                              className="w-20 h-7 text-xs px-1.5 border border-slate-200 rounded text-center font-bold"
+                              title="تعديل سعر البيع لهذا البند"
+                            />
+                            <span className="text-[11px] text-slate-400">ج.م/قطعة</span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* أزرار الكمية */}
-                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                        <button
-                          onClick={() => updateQuantity(item.product.id, -1)}
-                          className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-slate-700 hover:bg-slate-200 font-bold"
-                        >
-                          -
-                        </button>
-                        <span className="w-7 text-center font-bold text-xs">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, 1)}
-                          className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-slate-700 hover:bg-slate-200 font-bold"
-                        >
-                          +
-                        </button>
-                      </div>
+                        {/* أزرار الكمية */}
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, -1)}
+                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-slate-700 hover:bg-slate-200 font-bold active:scale-95 transition-transform"
+                          >
+                            -
+                          </button>
+                          <span className="w-7 text-center font-bold text-xs">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, 1)}
+                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-slate-700 hover:bg-slate-200 font-bold active:scale-95 transition-transform"
+                          >
+                            +
+                          </button>
+                        </div>
 
-                      <div className="text-left min-w-[70px]">
-                        <p className="text-xs font-black text-slate-900">
-                          {formatCurrency(item.quantity * item.unitPrice)}
-                        </p>
-                        <button
-                          onClick={() => removeFromCart(item.product.id)}
-                          className="text-rose-500 hover:text-rose-700 text-[10px] mt-0.5"
-                        >
-                          حذف
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                        <div className="text-left min-w-[70px]">
+                          <p className="text-xs font-black text-slate-900">
+                            {formatCurrency(item.quantity * item.unitPrice)}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.product.id)}
+                            className="text-rose-500 hover:text-rose-700 text-[10px] mt-0.5"
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      </m.div>
+                    ))}
+                  </AnimatePresence>
                 )}
               </div>
 
@@ -586,8 +639,9 @@ export default function NewSalePage() {
               <Button
                 size="xl"
                 variant={isDrawerClosed ? 'outline' : 'primary'}
-                disabled={cart.length === 0 || isDrawerClosed || isSavingSale}
-                isLoading={isSavingSale}
+                disabled={cart.length === 0 || isDrawerClosed}
+                saveState={saleSaveState}
+                savedText="تم حفظ الفاتورة"
                 onClick={handleCompleteSale}
                 className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
                   isDrawerClosed
@@ -662,7 +716,7 @@ export default function NewSalePage() {
             >
               إلغاء
             </Button>
-            <Button type="submit" variant="primary" size="md">
+            <Button type="submit" variant="primary" size="md" saveState={custSaveState}>
               حفظ واختيار العميل
             </Button>
           </div>

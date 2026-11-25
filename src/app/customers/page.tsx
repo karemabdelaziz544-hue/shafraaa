@@ -17,10 +17,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
 
 export default function CustomersPage() {
-  const { customers, salesInvoices, addCustomer, updateCustomer, addCustomerPayment } = useShop();
+  const { customers, salesInvoices, addCustomer, updateCustomer, addCustomerPayment, isInitialLoading } = useShop();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -121,7 +122,9 @@ export default function CustomersPage() {
       {/* جدول العملاء */}
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          {filteredCustomers.length === 0 ? (
+          {isInitialLoading ? (
+            <TableSkeletonRows columns={5} rows={5} />
+          ) : filteredCustomers.length === 0 ? (
             <div className="p-12 text-center text-slate-400 text-sm">
               لا يوجد عملاء مسجلين حالياً.
             </div>

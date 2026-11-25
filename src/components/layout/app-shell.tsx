@@ -1,15 +1,20 @@
 'use client';
 
-import React from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
 import { DesktopSidebar } from '@/components/layout/desktop-sidebar';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import { Header } from '@/components/layout/header';
+import { TopProgressBar } from '@/components/motion/top-progress-bar';
+import { RouteTransition } from '@/components/motion/route-transition';
+import { DashboardSkeleton } from '@/components/ui/skeleton';
+import { PREFETCH_ROUTES } from '@/lib/motion';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const {
     isAuthChecking,
     isAuthenticated,
@@ -20,23 +25,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     refreshFromCloud,
   } = useShop();
 
+  // تحميل استباقي خفيف للمسارات الرئيسية في الخلفية لسرعة التنقل على الهواتف
+  useEffect(() => {
+    if (!isAuthenticated || pathname === '/login') return;
+    const runPrefetch = () => {
+      PREFETCH_ROUTES.forEach((route) => {
+        if (route !== pathname) {
+          router.prefetch(route);
+        }
+      });
+    };
+
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof w.requestIdleCallback === 'function') {
+      const id = w.requestIdleCallback(runPrefetch);
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const timer = setTimeout(runPrefetch, 450);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, pathname, router]);
+
   if (pathname === '/login') {
     return (
-      <main className="flex-1 min-h-screen flex items-center justify-center bg-slate-50 p-4 w-full">
-        {children}
-      </main>
+      <>
+        <TopProgressBar />
+        <main className="flex-1 min-h-screen flex items-center justify-center bg-slate-50 p-4 w-full">
+          <RouteTransition>{children}</RouteTransition>
+        </main>
+      </>
     );
   }
 
   if (isSupabaseConfigured && (isAuthChecking || !isAuthenticated)) {
     return (
-      <div className="flex-1 min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center w-full">
-        <div className="w-12 h-12 rounded-2xl bg-brand-600 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 animate-pulse mb-4">
-          ش
+      <>
+        <TopProgressBar />
+        <div className="flex-1 min-h-screen p-4 sm:p-6 max-w-7xl w-full mx-auto">
+          <DashboardSkeleton />
         </div>
-        <p className="text-sm font-bold text-slate-800">جاري التحقق من جلسة الدخول...</p>
-        <p className="text-xs text-slate-500 mt-1">نظام إدارة محل شفرة</p>
-      </div>
+      </>
     );
   }
 
@@ -44,6 +74,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <TopProgressBar />
+
       {/* الشريط الجانبي للشاشات الكبيرة */}
       <DesktopSidebar />
 
@@ -64,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => void refreshFromCloud()}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition-colors active:scale-95"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>إعادة الفحص</span>
@@ -82,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           )}
-          {children}
+          <RouteTransition>{children}</RouteTransition>
         </main>
       </div>
 

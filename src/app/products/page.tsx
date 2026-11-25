@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useRef, useState, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import {
   Package,
@@ -19,22 +20,33 @@ import {
   Square,
 } from 'lucide-react';
 import { useShop, Product } from '@/lib/store/shop-store';
-import { Button } from '@/components/ui/button';
+import { Button, SaveButtonState } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
-import { BarcodeScannerModal } from '@/components/barcode-scanner-modal';
-import { BarcodeLabelPrinterModal } from '@/components/barcode-label-printer-modal';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { calculateProfitMargin } from '@/lib/calculations';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
 import { generateUniqueBarcode } from '@/lib/barcode-generator';
+
+const BarcodeScannerModal = dynamic(
+  () => import('@/components/barcode-scanner-modal').then((mod) => mod.BarcodeScannerModal),
+  { ssr: false }
+);
+
+const BarcodeLabelPrinterModal = dynamic(
+  () => import('@/components/barcode-label-printer-modal').then((mod) => mod.BarcodeLabelPrinterModal),
+  { ssr: false }
+);
 
 function ProductsContent() {
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter');
 
-  const { products, addProduct, updateProduct, deleteProduct } = useShop();
+  const { products, addProduct, updateProduct, deleteProduct, isInitialLoading } = useShop();
+  const [productSaveState, setProductSaveState] = useState<SaveButtonState>('idle');
+  const saveLockRef = useRef(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -130,7 +142,9 @@ function ProductsContent() {
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim() || saveLockRef.current) return;
+    saveLockRef.current = true;
+    setProductSaveState('saving');
 
     const res = editingProduct
       ? await updateProduct(editingProduct.id, {
@@ -156,11 +170,17 @@ function ProductsContent() {
         });
 
     if (!res.ok) {
-      alert(res.error || 'تعذر حفظ المنتج في قاعدة البيانات');
+      setProductSaveState('idle');
+      saveLockRef.current = false;
       return;
     }
 
-    setIsAddModalOpen(false);
+    setProductSaveState('saved');
+    setTimeout(() => {
+      setProductSaveState('idle');
+      saveLockRef.current = false;
+      setIsAddModalOpen(false);
+    }, 550);
   };
 
   const handleBarcodeScanned = (barcode: string) => {
@@ -289,7 +309,9 @@ function ProductsContent() {
       {/* جدول المنتجات */}
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          {filteredProducts.length === 0 ? (
+          {isInitialLoading ? (
+            <TableSkeletonRows columns={7} rows={6} />
+          ) : filteredProducts.length === 0 ? (
             <div className="p-12 text-center text-slate-400 text-sm">
               لا توجد منتجات مطابقة لخيارات البحث.
             </div>
@@ -602,7 +624,7 @@ function ProductsContent() {
             <Button type="button" variant="outline" size="md" onClick={() => setIsAddModalOpen(false)}>
               إلغاء
             </Button>
-            <Button type="submit" variant="primary" size="md">
+            <Button type="submit" variant="primary" size="md" saveState={productSaveState}>
               {editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
             </Button>
           </div>

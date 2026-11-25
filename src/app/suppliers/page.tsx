@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   Truck,
   Plus,
@@ -23,11 +24,13 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useShop, Supplier, PurchaseInvoice, SupplierPayment } from '@/lib/store/shop-store';
-import { Button } from '@/components/ui/button';
+import { Button, SaveButtonState } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
+import { LIST_ITEM_TRANSITION } from '@/lib/motion';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
 
 interface PurchaseLineFormItem {
@@ -48,7 +51,11 @@ export default function SuppliersPage() {
     addSupplier,
     addSupplierPayment,
     createPurchaseInvoice,
+    isInitialLoading,
   } = useShop();
+
+  const [purchaseSaveState, setPurchaseSaveState] = useState<SaveButtonState>('idle');
+  const purchaseLockRef = useRef(false);
 
   const [activeTab, setActiveTab] = useState<'suppliers' | 'invoices'>('suppliers');
   const [searchQuery, setSearchQuery] = useState('');
@@ -217,7 +224,7 @@ export default function SuppliersPage() {
 
   const handleCreatePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSupplier) return;
+    if (!selectedSupplier || purchaseLockRef.current) return;
 
     const validItems = purchaseData.items.filter(
       (i) => (i.productId || i.productName.trim()) && i.quantity > 0
@@ -227,6 +234,8 @@ export default function SuppliersPage() {
       return;
     }
 
+    purchaseLockRef.current = true;
+    setPurchaseSaveState('saving');
     const res = await createPurchaseInvoice({
       supplierId: selectedSupplier.id,
       supplierName: selectedSupplier.name,
@@ -245,19 +254,25 @@ export default function SuppliersPage() {
     });
 
     if (!res.ok) {
-      alert(res.error || 'تعذر حفظ فاتورة التوريد في قاعدة البيانات');
+      setPurchaseSaveState('idle');
+      purchaseLockRef.current = false;
       return;
     }
 
-    setIsPurchaseModalOpen(false);
-    setPurchaseData({
-      items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0, salePrice: 0 }],
-      paymentMethod: 'cash',
-      paidAmount: 0,
-      isPaidAmountManual: false,
-      notes: '',
-      invoicePhotoUrl: null,
-    });
+    setPurchaseSaveState('saved');
+    setTimeout(() => {
+      setPurchaseSaveState('idle');
+      purchaseLockRef.current = false;
+      setIsPurchaseModalOpen(false);
+      setPurchaseData({
+        items: [{ isNew: false, productId: '', productName: '', quantity: 1, unitCost: 0, salePrice: 0 }],
+        paymentMethod: 'cash',
+        paidAmount: 0,
+        isPaidAmountManual: false,
+        notes: '',
+        invoicePhotoUrl: null,
+      });
+    }, 450);
   };
 
   // فتح نافذة فاتورة شراء لمورد
@@ -418,7 +433,9 @@ export default function SuppliersPage() {
       {activeTab === 'suppliers' && (
         <Card>
           <CardContent className="p-0 overflow-x-auto">
-            {filteredSuppliers.length === 0 ? (
+            {isInitialLoading ? (
+              <TableSkeletonRows columns={5} rows={5} />
+            ) : filteredSuppliers.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-sm">
                 لا يوجد موردين مطابقين للبحث.
               </div>
@@ -511,7 +528,9 @@ export default function SuppliersPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            {filteredInvoices.length === 0 ? (
+            {isInitialLoading ? (
+              <TableSkeletonRows columns={7} rows={5} />
+            ) : filteredInvoices.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-sm">
                 لا توجد فواتير شراء وتوريد مسجلة حتى الآن.
               </div>
@@ -730,11 +749,16 @@ export default function SuppliersPage() {
             <div className="space-y-3">
               <label className="text-xs font-bold text-slate-800 block">بنود الفاتورة الموردة:</label>
 
-              {purchaseData.items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5"
-                >
+              <AnimatePresence initial={false}>
+                {purchaseData.items.map((item, idx) => (
+                  <m.div
+                    key={idx}
+                    initial={LIST_ITEM_TRANSITION.initial}
+                    animate={LIST_ITEM_TRANSITION.animate}
+                    exit={LIST_ITEM_TRANSITION.exit}
+                    transition={LIST_ITEM_TRANSITION.transition}
+                    className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5"
+                  >
                   <div className="flex items-center justify-between pb-1 border-b border-slate-200/60">
                     <span className="text-xs font-bold text-slate-600">بند #{idx + 1}</span>
 
@@ -884,8 +908,9 @@ export default function SuppliersPage() {
                   <div className="text-left text-[11px] text-slate-500 font-bold pt-1 border-t border-slate-200/50">
                     إجمالي البند: {formatCurrency(item.quantity * (item.unitCost || 0))}
                   </div>
-                </div>
-              ))}
+                  </m.div>
+                ))}
+              </AnimatePresence>
 
               <Button
                 type="button"
@@ -1042,7 +1067,7 @@ export default function SuppliersPage() {
               </div>
             </div>
 
-            <Button type="submit" size="xl" variant="primary" className="w-full font-bold shadow-lg shadow-brand-500/25">
+            <Button type="submit" size="xl" variant="primary" saveState={purchaseSaveState} savedText="تم التوريد والحفظ" className="w-full font-bold shadow-lg shadow-brand-500/25">
               تأكيد وتوريد البضاعة للمخزن وحفظ الفاتورة
             </Button>
           </form>

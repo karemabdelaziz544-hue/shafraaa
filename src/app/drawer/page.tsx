@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Vault,
   Lock,
@@ -15,10 +15,11 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useShop } from '@/lib/store/shop-store';
-import { Button } from '@/components/ui/button';
+import { Button, SaveButtonState } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
+import { FormReportSkeleton } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
 
 export default function DrawerPage() {
@@ -29,6 +30,7 @@ export default function DrawerPage() {
     openNewDrawerSession,
     closeDrawerSession,
     reopenDrawerSession,
+    isInitialLoading,
   } = useShop();
 
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
@@ -37,7 +39,12 @@ export default function DrawerPage() {
   const [closingNotes, setClosingNotes] = useState('');
   const [openingCashInput, setOpeningCashInput] = useState('500');
   const [drawerError, setDrawerError] = useState<string | null>(null);
-  const [isDrawerSaving, setIsDrawerSaving] = useState(false);
+  const [drawerSaveState, setDrawerSaveState] = useState<SaveButtonState>('idle');
+  const drawerLockRef = useRef(false);
+
+  if (isInitialLoading) {
+    return <FormReportSkeleton />;
+  }
 
   // حساب الفارق الحي عند إدخال النقدية الفعلية
   const actualNum = parseFloat(actualCashInput) || 0;
@@ -45,32 +52,47 @@ export default function DrawerPage() {
 
   const handleCloseDrawer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeDrawer) return;
+    if (!activeDrawer || drawerLockRef.current) return;
+    drawerLockRef.current = true;
     setDrawerError(null);
-    setIsDrawerSaving(true);
+    setDrawerSaveState('saving');
     const res = await closeDrawerSession(actualNum, closingNotes);
-    setIsDrawerSaving(false);
     if (!res.ok) {
+      setDrawerSaveState('idle');
+      drawerLockRef.current = false;
       setDrawerError(res.error || 'تعذر إغلاق الدرج في قاعدة البيانات');
       return;
     }
-    setIsCloseModalOpen(false);
-    setActualCashInput('');
-    setClosingNotes('');
+    setDrawerSaveState('saved');
+    setTimeout(() => {
+      setDrawerSaveState('idle');
+      drawerLockRef.current = false;
+      setIsCloseModalOpen(false);
+      setActualCashInput('');
+      setClosingNotes('');
+    }, 450);
   };
 
   const handleOpenNewDrawer = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (drawerLockRef.current) return;
+    drawerLockRef.current = true;
     setDrawerError(null);
     const op = parseFloat(openingCashInput) || 0;
-    setIsDrawerSaving(true);
+    setDrawerSaveState('saving');
     const res = await openNewDrawerSession(op);
-    setIsDrawerSaving(false);
     if (!res.ok) {
+      setDrawerSaveState('idle');
+      drawerLockRef.current = false;
       setDrawerError(res.error || 'تعذر فتح وردية الدرج في قاعدة البيانات');
       return;
     }
-    setIsOpenNewModalOpen(false);
+    setDrawerSaveState('saved');
+    setTimeout(() => {
+      setDrawerSaveState('idle');
+      drawerLockRef.current = false;
+      setIsOpenNewModalOpen(false);
+    }, 450);
   };
 
   return (
@@ -371,7 +393,7 @@ export default function DrawerPage() {
               />
             </div>
 
-            <Button type="submit" size="xl" variant="danger" isLoading={isDrawerSaving} disabled={isDrawerSaving} className="w-full font-bold">
+            <Button type="submit" size="xl" variant="danger" saveState={drawerSaveState} savedText="تم الإغلاق" className="w-full font-bold">
               <Lock className="w-5 h-5 ml-2" />
               <span>تأكيد الإغلاق وقفل الدرج</span>
             </Button>
@@ -409,7 +431,7 @@ export default function DrawerPage() {
               />
             </div>
 
-            <Button type="submit" size="lg" variant="primary" isLoading={isDrawerSaving} disabled={isDrawerSaving} className="w-full font-bold">
+            <Button type="submit" size="lg" variant="primary" saveState={drawerSaveState} savedText="تم الفتح" className="w-full font-bold">
               فتح الوردية الآن
             </Button>
           </form>

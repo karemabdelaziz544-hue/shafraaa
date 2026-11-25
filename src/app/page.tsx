@@ -24,6 +24,8 @@ import { useShop } from '@/lib/store/shop-store';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DashboardSkeleton } from '@/components/ui/skeleton';
+import { AnimatedNumber } from '@/components/motion/animated-number';
 import { formatCurrency, formatArabicDate, formatPercent } from '@/lib/formatters';
 
 export default function HomePage() {
@@ -35,7 +37,12 @@ export default function HomePage() {
     salesInvoices,
     expenses,
     activeDrawer,
+    isInitialLoading,
   } = useShop();
+
+  if (isInitialLoading) {
+    return <DashboardSkeleton />;
+  }
 
   // تصفية حركات اليوم
   const todayStr = new Date().toISOString().split('T')[0];
@@ -129,7 +136,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="text-lg sm:text-2xl font-black text-slate-900">
-              {formatCurrency(todaySalesTotal)}
+              <AnimatedNumber value={todaySalesTotal} />
             </div>
             <p className="text-xs text-slate-500 mt-1">
               عدد الفواتير: <span className="font-bold text-slate-800">{todaySalesInvoices.length}</span>
@@ -147,7 +154,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="text-lg sm:text-2xl font-black text-emerald-600">
-              {formatCurrency(todayGrossProfit)}
+              <AnimatedNumber value={todayGrossProfit} />
             </div>
             <p className="text-xs text-slate-500 mt-1">
               الهامش:{' '}
@@ -168,7 +175,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="text-lg sm:text-2xl font-black text-rose-600">
-              {formatCurrency(todayExpensesTotal)}
+              <AnimatedNumber value={todayExpensesTotal} />
             </div>
             <p className="text-xs text-slate-500 mt-1">
               عدد البنود: <span className="font-bold text-slate-700">{todayExpenses.length} مصروفات</span>
@@ -186,7 +193,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="text-lg sm:text-2xl font-black text-slate-900">
-              {formatCurrency(currentDrawerCash)}
+              <AnimatedNumber value={currentDrawerCash} />
             </div>
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
               الحالة:{' '}

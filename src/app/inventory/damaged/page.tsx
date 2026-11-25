@@ -19,10 +19,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
+import { TableSkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency, formatArabicDateTime } from '@/lib/formatters';
 
 export default function DamagedInventoryPage() {
-  const { products, damagedItems, addDamagedItem } = useShop();
+  const { products, damagedItems, addDamagedItem, isInitialLoading } = useShop();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -264,7 +265,9 @@ export default function DamagedInventoryPage() {
           </span>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
-          {filteredDamaged.length === 0 ? (
+          {isInitialLoading ? (
+            <TableSkeletonRows columns={6} rows={4} />
+          ) : filteredDamaged.length === 0 ? (
             <div className="p-12 text-center text-slate-400 text-sm">
               لا توجد أصناف هالكة مسجلة في هذه الفترة.
             </div>
