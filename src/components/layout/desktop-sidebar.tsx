@@ -76,7 +76,7 @@ export function DesktopSidebar() {
       <div className="p-5 border-b border-abyssal/60 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-flame flex items-center justify-center text-abyssal font-black text-xl shadow-accent shrink-0">
-            ش
+            {shopName.replace(/^محل\s+/, '').trim().slice(0, 1) || 'ش'}
           </div>
           <div className="min-w-0">
             <h1 className="font-bold text-palladian text-base truncate">{shopName}</h1>

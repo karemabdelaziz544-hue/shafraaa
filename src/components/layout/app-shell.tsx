@@ -18,6 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const {
+    shopName,
     isAuthChecking,
     isAuthenticated,
     isSupabaseConfigured,
@@ -29,6 +30,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   } = useShop();
 
   const routeAllowed = canAccessRoute(pathname, permissions);
+
+  // تحديث عنوان المتصفح تلقائياً عند تغيير اسم المحل من الإعدادات
+  useEffect(() => {
+    if (typeof document !== 'undefined' && shopName) {
+      document.title = `${shopName} | لوحة إدارة المحل`;
+    }
+  }, [shopName]);
 
   // التحقق الفوري على مستوى الواجهة وإعادة التوجيه عند محاولة فتح مسار غير مصرح به
   useEffect(() => {

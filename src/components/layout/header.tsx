@@ -16,6 +16,7 @@ export function Header() {
     activeDrawer,
     currentUserName,
     ownerName,
+    shopName,
     userRole,
     can,
     isAuthenticated,
@@ -43,11 +44,14 @@ export function Header() {
       {/* الترحيب بالمستخدم وتاريخ اليوم */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base sm:text-lg font-black text-ink-strong truncate">
               أهلًا يا {displayName}
             </h2>
-            <Badge variant="info" className="hidden sm:inline-flex shrink-0">
+            <Badge variant="accent" className="hidden sm:inline-flex shrink-0">
+              {shopName}
+            </Badge>
+            <Badge variant="info" className="hidden md:inline-flex shrink-0">
               {ROLE_LABELS[userRole]}
             </Badge>
           </div>

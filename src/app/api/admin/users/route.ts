@@ -17,6 +17,9 @@ export async function GET() {
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
+  if (auth.ctx.role !== 'admin') {
+    return NextResponse.json({ ok: false, error: 'هذا الإجراء متاح لمدير النظام فقط' }, { status: 403 });
+  }
 
   const { supabase, shopId } = auth.ctx;
 
@@ -103,6 +106,12 @@ export async function POST(request: Request) {
   const auth = await requireServerAuth('users.manage');
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+  }
+  if (auth.ctx.role !== 'admin') {
+    return NextResponse.json(
+      { ok: false, error: 'فقط مدير النظام (Admin) يمكنه إنشاء حسابات مستخدمين جدد' },
+      { status: 403 }
+    );
   }
 
   const { supabase, shopId, userId, fullName: actorName, role: actorRole } = auth.ctx;

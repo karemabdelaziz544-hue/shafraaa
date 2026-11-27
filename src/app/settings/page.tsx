@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Settings,
   Database,
@@ -28,6 +28,7 @@ export default function SettingsPage() {
     shopName,
     ownerName,
     userEmail,
+    userRole,
     isSupabaseConfigured,
     cloudStatus,
     cloudError,
@@ -38,14 +39,34 @@ export default function SettingsPage() {
     can,
     sessionTimeoutMinutes,
     updateSessionTimeout,
+    updateShopName,
   } = useShop();
   const { theme, setTheme } = useTheme();
 
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
   const [isCheckingCloud, setIsCheckingCloud] = useState(false);
+  const [shopNameInput, setShopNameInput] = useState(shopName);
+  const [isSavingShopName, setIsSavingShopName] = useState(false);
+  const [shopNameMsg, setShopNameMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [timeoutInput, setTimeoutInput] = useState<number>(sessionTimeoutMinutes || 60);
   const [isSavingTimeout, setIsSavingTimeout] = useState(false);
   const [timeoutMsg, setTimeoutMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setShopNameInput(shopName);
+  }, [shopName]);
+
+  const handleSaveShopName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingShopName(true);
+    setShopNameMsg(null);
+    const res = await updateShopName(shopNameInput);
+    setShopNameMsg({
+      ok: res.ok,
+      text: res.ok ? 'تم تحديث اسم المحل بنجاح في جميع الشاشات والفواتير!' : res.error || 'تعذر حفظ اسم المحل',
+    });
+    setIsSavingShopName(false);
+  };
 
   const handleSaveTimeout = async () => {
     setIsSavingTimeout(true);
@@ -61,7 +82,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `نسخة_احتياطية_محل_شفرة_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `نسخة_احتياطية_${shopName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -115,9 +136,34 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-ink-muted block mb-1">اسم المحل:</span>
-              <p className="font-bold text-base text-ink-strong">{shopName}</p>
+            <div className="sm:col-span-2">
+              <span className="text-ink-muted block mb-1.5">اسم المحل:</span>
+              {userRole === 'admin' ? (
+                <form onSubmit={handleSaveShopName} className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      value={shopNameInput}
+                      onChange={(e) => setShopNameInput(e.target.value)}
+                      placeholder="اسم المحل الرسمي"
+                      className="flex-1 h-10 px-3.5 rounded-xl border border-line bg-surface text-ink-strong text-sm font-bold focus:outline-none focus:border-flame focus:ring-2 focus:ring-flame/25"
+                    />
+                    <Button type="submit" variant="primary" size="md" isLoading={isSavingShopName}>
+                      حفظ اسم المحل
+                    </Button>
+                  </div>
+                  {shopNameMsg && (
+                    <p className={`text-xs font-bold ${shopNameMsg.ok ? 'text-success' : 'text-danger-text'}`}>
+                      {shopNameMsg.text}
+                    </p>
+                  )}
+                </form>
+              ) : (
+                <p className="font-bold text-base text-ink-strong">{shopName}</p>
+              )}
             </div>
             <div>
               <span className="text-ink-muted block mb-1">المستخدم المسؤول:</span>

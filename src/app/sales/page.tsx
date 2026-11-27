@@ -42,7 +42,7 @@ function getInvoiceStatusBadge(status: SaleInvoice['status']) {
 }
 
 export default function SalesHistoryPage() {
-  const { salesInvoices, salesReturns, ownerName, createSaleReturn, can, isInitialLoading } = useShop();
+  const { salesInvoices, salesReturns, ownerName, shopName, createSaleReturn, can, isInitialLoading } = useShop();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
@@ -169,7 +169,7 @@ export default function SalesHistoryPage() {
             <span>سجل فواتير المبيعات والمرتجع</span>
           </h1>
           <p className="text-xs text-ink-muted">
-            أهلًا يا {ownerName} - متابعة كاملة للفواتير، الكميات المرتجعة والمتبقية، وسجل المرتجعات
+            {shopName} • متابعة كاملة للفواتير، الكميات المرتجعة والمتبقية، وسجل المرتجعات
           </p>
         </div>
 
@@ -397,7 +397,7 @@ export default function SalesHistoryPage() {
         <Dialog
           isOpen={true}
           onClose={() => setSelectedInvoiceId(null)}
-          title={`تفاصيل فاتورة بيع ${selectedInvoice.invoiceNumber}`}
+          title={`${shopName} - تفاصيل فاتورة بيع ${selectedInvoice.invoiceNumber}`}
           maxWidth="2xl"
         >
           <div className="space-y-5">

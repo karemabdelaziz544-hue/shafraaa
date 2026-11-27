@@ -15,6 +15,9 @@ export async function PATCH(
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
+  if (auth.ctx.role !== 'admin') {
+    return NextResponse.json({ ok: false, error: 'تعديل المستخدمين متاح لمدير النظام فقط' }, { status: 403 });
+  }
 
   const targetUserId = context.params.id;
   const { supabase, shopId, userId, fullName: actorName, role: actorRole } = auth.ctx;
@@ -178,6 +181,12 @@ export async function DELETE(
   const auth = await requireServerAuth('users.manage');
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+  }
+  if (auth.ctx.role !== 'admin') {
+    return NextResponse.json({ ok: false, error: 'حذف المستخدمين متاح لمدير النظام فقط' }, { status: 403 });
+  }
+  if (auth.ctx.role !== 'admin') {
+    return NextResponse.json({ ok: false, error: 'تعديل المستخدمين متاح لمدير النظام فقط' }, { status: 403 });
   }
 
   const targetUserId = context.params.id;

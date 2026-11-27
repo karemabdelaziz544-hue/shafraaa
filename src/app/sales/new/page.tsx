@@ -47,6 +47,7 @@ export default function NewSalePage() {
   const {
     products,
     customers,
+    shopName,
     createSaleInvoice,
     activeDrawer,
     drawerSessions,
@@ -262,7 +263,7 @@ export default function NewSalePage() {
             <span>نقطة البيع - فاتورة جديدة (POS)</span>
           </h1>
           <p className="text-xs text-ink-muted">
-            أهلًا يا كريم - اختر الصنف أو امسح الباركود بالكاميرا مباشرة
+            {shopName} • اختر الصنف أو امسح الباركود بالكاميرا مباشرة
           </p>
         </div>
 

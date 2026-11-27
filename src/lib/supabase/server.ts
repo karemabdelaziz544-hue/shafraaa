@@ -176,3 +176,27 @@ export function getClientIp(request: Request): string {
   if (fwd) return fwd.split(',')[0].trim();
   return request.headers.get('x-real-ip') || 'unknown';
 }
+
+export async function getPublicShopName(): Promise<string> {
+  try {
+    const adminSb = createAdminSupabaseClient();
+    if (adminSb) {
+      const { data } = await adminSb
+        .from('shops')
+        .select('name')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (data?.name) return data.name as string;
+    }
+
+    const eph = createEphemeralAnonClient();
+    if (eph) {
+      const { data } = await eph.rpc('get_public_shop_name');
+      if (typeof data === 'string' && data.trim()) return data.trim();
+    }
+  } catch {
+    // تجاهل في حال عدم التهيئة بعد
+  }
+  return 'محل شفرة';
+}

@@ -10,7 +10,6 @@ import {
 
 const SKIP_PATHS = [
   '/login',
-  '/no-permission',
   '/auth/callback',
   '/api/auth/',
   '/manifest.json',
@@ -60,6 +59,7 @@ export async function middleware(request: NextRequest) {
   const { data: userRes } = await supabase.auth.getUser();
   const user = userRes?.user;
 
+  // أي مستخدم غير مسجل الدخول يُوجّه فوراً إلى صفحة الدخول (حتى /no-permission)
   if (!user) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ ok: false, error: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
@@ -68,12 +68,69 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // مسارات API تتحقق بنفسها بتفصيل كامل عبر requireServerAuth
-  if (pathname.startsWith('/api/')) {
+  // مسارات API تتحقق بنفسها عبر requireServerAuth، و/no-permission متاح للمسجلين فقط
+  if (pathname.startsWith('/api/') || pathname === '/no-permission') {
     return response;
   }
 
-  // التحقق من تفعيل الحساب وصلاحية المسار في قاعدة البيانات مباشرة
+  // طلبات prefetch الخلفية لا تحتاج 3 استعلامات DB متكررة بعد التحقق من المستخدم
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') === '1' ||
+    request.headers.get('purpose') === 'prefetch';
+  if (isPrefetch) {
+    return response;
+  }
+
+  // استعلام سريع موحد لبيانات الدور والصلاحيات في جولة واحدة بدلاً من 3 جولات
+  let ctxData: {
+    found?: boolean;
+    shopId?: string;
+    role?: string;
+    isActive?: boolean;
+    rolePermissions?: Record<string, boolean>;
+    userOverrides?: Record<string, boolean>;
+  } | null = null;
+
+  try {
+    const { data, error } = await supabase.rpc('get_middleware_auth_context');
+    if (!error && data) {
+      ctxData = data as any;
+    }
+  } catch {
+    ctxData = null;
+  }
+
+  if (ctxData) {
+    if (!ctxData.found) {
+      return response;
+    }
+
+    if (!ctxData.isActive) {
+      await supabase.auth.signOut();
+      const loginUrl = new URL('/login?deactivated=1', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const role = normalizeRoleKey(ctxData.role);
+    if (role === 'admin') {
+      return response;
+    }
+
+    const effective = resolveEffectivePermissions({
+      role,
+      rolePermissions: (ctxData.rolePermissions || {}) as Partial<Record<PermissionKey, boolean>>,
+      userOverrides: (ctxData.userOverrides || {}) as Partial<Record<PermissionKey, boolean>>,
+    });
+
+    if (!canAccessRoute(pathname, effective)) {
+      const blockedUrl = new URL('/no-permission', request.url);
+      return NextResponse.redirect(blockedUrl);
+    }
+
+    return response;
+  }
+
+  // مسار احتياطي في حال عدم تشغيل Migration 7 بعد
   const { data: profile } = await supabase
     .from('profiles')
     .select('shop_id, role, is_active')

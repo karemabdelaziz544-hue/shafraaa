@@ -209,3 +209,39 @@ test('15. التحقق من وجود حواجز الأمان في Middleware و�
     assert.ok(migration6.includes(sqlSymbol), `Migration 6 يجب أن يحتوي على ${sqlSymbol}`);
   }
 });
+
+test('16. منع التسجيل العام وحصر تعديل اسم المحل بالمدير وتسريع تسجيل الدخول', () => {
+  const loginPage = fs.readFileSync(path.join(process.cwd(), 'src/app/login/page.tsx'), 'utf8');
+  const loginClient = fs.readFileSync(path.join(process.cwd(), 'src/components/auth/login-client.tsx'), 'utf8');
+  assert.strictEqual(fs.existsSync(path.join(process.cwd(), 'src/app/signup/page.tsx')), false);
+  assert.strictEqual(loginPage.includes('signUp') || loginClient.includes('signUp'), false, 'يجب إزالة signUp من شاشة الدخول');
+  assert.strictEqual(loginClient.includes('إنشاء متجر جديد'), false, 'يجب إزالة رابط إنشاء حساب من شاشة الدخول');
+  assert.strictEqual(loginClient.includes('router.refresh()'), false, 'يجب عدم تكرار طلبات الدخول عبر router.refresh');
+
+  const signupApi = fs.readFileSync(path.join(process.cwd(), 'src/app/api/auth/signup/route.ts'), 'utf8');
+  assert.ok(signupApi.includes('status: 403'), 'نقطة /api/auth/signup يجب أن ترفض الطلبات برمز 403');
+
+  const mw = fs.readFileSync(path.join(process.cwd(), 'src/middleware.ts'), 'utf8');
+  assert.strictEqual(mw.includes("'/no-permission',\n"), false, 'لا يجب استثناء /no-permission لغير المسجلين في SKIP_PATHS');
+
+  const shopApi = fs.readFileSync(path.join(process.cwd(), 'src/app/api/settings/shop/route.ts'), 'utf8');
+  assert.ok(shopApi.includes("role !== 'admin'"), 'تعديل اسم المحل يجب أن يُقصر على admin فقط');
+
+  const loginApi = fs.readFileSync(path.join(process.cwd(), 'src/app/api/auth/login/route.ts'), 'utf8');
+  assert.ok(loginApi.includes('Promise.all'), 'تسجيل الدخول يجب أن يشغل فحص المعدل والدخول بالتوازي');
+  assert.ok(loginApi.includes('finalize_user_login'), 'تسجيل الدخول يجب أن يستخدم finalize_user_login السريعة');
+
+  const migration7 = fs.readFileSync(
+    path.join(process.cwd(), 'supabase/migrations/20261127_000007_block_public_signup_and_login_perf.sql'),
+    'utf8'
+  );
+  for (const sym of [
+    'التسجيل العام معطّل',
+    'protect_shop_admin_fields',
+    'get_public_shop_name',
+    'finalize_user_login',
+    'get_middleware_auth_context',
+  ]) {
+    assert.ok(migration7.includes(sym), `Migration 7 يجب أن يحتوي على ${sym}`);
+  }
+});

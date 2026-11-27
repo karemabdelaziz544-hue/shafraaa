@@ -30,9 +30,22 @@ export async function GET(request: Request) {
         },
       });
 
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (!error) {
-        return NextResponse.redirect(`${origin}${next}`);
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error && data?.user) {
+        // التأكد من وجود ملف مرتبط بمتجر وأن الحساب نشط (منع أي تسجيل غير مصرح به)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, is_active')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (!profile || !profile.is_active) {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(`${origin}/login?error=signup_disabled`);
+        }
+
+        const safeNext = next.startsWith('/') ? next : '/';
+        return NextResponse.redirect(`${origin}${safeNext}`);
       }
     }
   }

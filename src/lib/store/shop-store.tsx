@@ -295,6 +295,20 @@ interface ShopContextType {
   can: (permission: PermissionKey) => boolean;
   sessionTimeoutMinutes: number;
   updateSessionTimeout: (minutes: number) => Promise<ActionResult>;
+  updateShopName: (newName: string) => Promise<ActionResult>;
+  completeFastLogin: (payload: {
+    user: { id: string; email?: string | null };
+    session?: { access_token: string; refresh_token: string } | null;
+    bootstrap: {
+      shopId: string;
+      shopName: string;
+      ownerName: string;
+      fullName: string;
+      role: RoleKey;
+      sessionTimeoutMinutes: number;
+      permissions: Record<PermissionKey, boolean>;
+    };
+  }) => Promise<void>;
   isSupabaseConfigured: boolean;
   cloudStatus: 'connected' | 'error' | 'offline';
   cloudError: string | null;
@@ -779,6 +793,100 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     if (!supabase || !userId) return false;
     return hydrateFromSupabase(userId, userEmail, { silent: true });
   }, [supabase, userId, userEmail, hydrateFromSupabase]);
+
+  const completeFastLogin = useCallback(
+    async (payload: {
+      user: { id: string; email?: string | null };
+      session?: { access_token: string; refresh_token: string } | null;
+      bootstrap: {
+        shopId: string;
+        shopName: string;
+        ownerName: string;
+        fullName: string;
+        role: RoleKey;
+        sessionTimeoutMinutes: number;
+        permissions: Record<PermissionKey, boolean>;
+      };
+    }) => {
+      const { user, session, bootstrap } = payload;
+      loadedUserRef.current = user.id;
+      setUserId(user.id);
+      setUserEmail(user.email || null);
+      setShopId(bootstrap.shopId);
+      setShopName(bootstrap.shopName);
+      setOwnerName(bootstrap.ownerName);
+      setCurrentUserName(bootstrap.fullName);
+      setUserRole(bootstrap.role);
+      setPermissions(bootstrap.permissions);
+      setSessionTimeoutMinutes(bootstrap.sessionTimeoutMinutes || 120);
+      setCloudError(null);
+      setIsAuthenticated(true);
+      setIsAuthChecking(false);
+      setIsLoaded(true);
+
+      // مزامنة عميل المتصفح وجلب الجداول في الخلفية دون تأخير الانتقال إلى لوحة التحكم
+      if (supabase) {
+        if (session?.access_token && session?.refresh_token) {
+          void supabase.auth
+            .setSession({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            })
+            .catch(() => null);
+        }
+        void hydrateFromSupabase(user.id, user.email, { silent: true });
+      }
+    },
+    [supabase, hydrateFromSupabase]
+  );
+
+  const updateShopName = useCallback(
+    async (newName: string): Promise<ActionResult> => {
+      const trimmed = newName.trim();
+      if (trimmed.length < 2 || trimmed.length > 80) {
+        return { ok: false, error: 'يجب أن يكون اسم المحل بين حرفين و 80 حرفاً.' };
+      }
+
+      if (userRole !== 'admin') {
+        return { ok: false, error: 'تعديل اسم المحل متاح لمدير النظام (Admin) فقط.' };
+      }
+
+      if (!supabase) {
+        setShopName(trimmed);
+        return { ok: true };
+      }
+
+      try {
+        const res = await fetch('/api/settings/shop', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shopName: trimmed }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          return { ok: false, error: data.error || 'تعذر حفظ اسم المحل' };
+        }
+        const savedName = data.shopName || trimmed;
+        setShopName(savedName);
+        if (typeof window !== 'undefined' && userId) {
+          try {
+            const raw = sessionStorage.getItem(`shafra_snapshot_${userId}`);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              parsed.shopName = savedName;
+              sessionStorage.setItem(`shafra_snapshot_${userId}`, JSON.stringify(parsed));
+            }
+          } catch {
+            // ignore
+          }
+        }
+        return { ok: true };
+      } catch {
+        return { ok: false, error: 'تعذر الاتصال بالخادم لحفظ اسم المحل' };
+      }
+    },
+    [supabase, userRole, userId]
+  );
 
   // التحقق من مهلة الجلسة وحالة تفعيل الحساب بشكل دوري عند تفعيل Supabase
   useEffect(() => {
@@ -3264,6 +3372,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         can,
         sessionTimeoutMinutes,
         updateSessionTimeout,
+        updateShopName,
+        completeFastLogin,
         isSupabaseConfigured,
         cloudStatus,
         cloudError,

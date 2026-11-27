@@ -31,6 +31,7 @@ const Sales7DayChart = dynamic(
 export default function ReportsPage() {
   const {
     ownerName,
+    shopName,
     products,
     customers,
     suppliers,
@@ -190,7 +191,7 @@ export default function ReportsPage() {
     }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesExport), 'فواتير المبيعات');
 
-    XLSX.writeFile(wb, `تقرير_محل_شفرة_${selectedMonth}.xlsx`);
+    XLSX.writeFile(wb, `تقرير_${shopName.replace(/\s+/g, '_')}_${selectedMonth}.xlsx`);
   };
 
   return (
@@ -200,10 +201,10 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-ink-strong flex items-center gap-2">
             <BarChart3 strokeWidth={ICON_TOKENS.strokeWidth} className="w-6 h-6 text-truffle dark:text-flame" />
-            <span>التقارير المالية وصافي الأرباح</span>
+            <span>التقارير المالية وصافي الأرباح - {shopName}</span>
           </h1>
           <p className="text-xs text-ink-muted">
-            أهلًا يا {ownerName} - تقارير دقيقة بالجنيه المصري تفرق تماماً بين النقدية والأرباح
+            {shopName} • أهلًا يا {ownerName} - تقارير دقيقة بالجنيه المصري تفرق تماماً بين النقدية والأرباح
           </p>
         </div>
 
